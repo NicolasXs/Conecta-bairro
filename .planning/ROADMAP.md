@@ -12,7 +12,7 @@ Construção do frontend do Conecta Bairro em quatro fases de entrega. Começamo
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Foundation & Auth** - Project scaffolding + authentication flows
+- [x] **Phase 1: Foundation & Auth** - Project scaffolding + authentication flows ✅
 - [ ] **Phase 2: User Profiles & Reviews** - Profile setup, editing, public view, and ratings display
 - [ ] **Phase 3: Posts & Feed** - Availability post creation and neighborhood-filtered feed
 - [ ] **Phase 4: Chat** - Private messaging between users
@@ -31,9 +31,9 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 3 plans
 
 Plans:
-- [ ] 01-01-PLAN.md — Project scaffold (TanStack Start) + design system (shadcn new-york, teal palette, Inter font, Magic UI)
-- [ ] 01-02-PLAN.md — Auth infrastructure (token utilities, React Query hooks, root layout, protected route guard)
-- [ ] 01-03-PLAN.md — Auth pages (Login /login + Register /register with full UI-SPEC implementation)
+- [x] 01-01-PLAN.md — Project scaffold (TanStack Start) + design system (shadcn new-york, teal palette, Inter font, Magic UI) ✅
+- [x] 01-02-PLAN.md — Auth infrastructure (token utilities, React Query hooks, root layout, protected route guard) ✅
+- [x] 01-03-PLAN.md — Auth pages (Login /login + Register /register with full UI-SPEC implementation) ✅
 
 **UI hint**: yes
 
