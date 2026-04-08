@@ -1,12 +1,12 @@
-# CNB — Serviços do Bairro
+# Conecta Bairro
 
 ## What This Is
 
-Marketplace web de serviços locais onde prestadores (faxineiras, pedreiros, eletricistas, etc.) criam um perfil com portfólio e recebem avaliações, e contratantes podem buscar prestadores próximos ou postar o que precisam para que prestadores se candidatem. A plataforma conecta as duas pontas diretamente — sem intermediar pagamento. Escalável para qualquer cidade ou região.
+Conecta Bairro é uma plataforma local de conexão entre trabalhadores e contratantes do mesmo bairro. Qualquer pessoa pode publicar que precisa de um serviço ou que está disponível para trabalhar, e a plataforma conecta essas pessoas por proximidade (bairro/CEP). O foco é em serviços informais e autônomos como pedreiro, diarista, babá, delivery, entre outros.
 
 ## Core Value
 
-Conectar quem precisa de serviço com prestadores de confiança do bairro — rápido, sem atravessador, com transparência de avaliações e histórico de trabalho.
+Conectar trabalhadores e contratantes do mesmo bairro — a proximidade é o filtro principal.
 
 ## Requirements
 
@@ -16,61 +16,60 @@ Conectar quem precisa de serviço com prestadores de confiança do bairro — r�
 
 ### Active
 
-- [ ] Prestador pode se cadastrar e criar perfil com foto, descrição e categoria de serviço
-- [ ] Prestador pode adicionar fotos de trabalhos realizados ao portfólio
-- [ ] Contratante pode buscar prestadores por tipo de serviço e localização
-- [ ] Contratante pode visualizar perfil completo do prestador (fotos, avaliações, contato)
-- [ ] Contratante pode postar uma demanda (o que precisa, região) e receber candidaturas
-- [ ] Prestador pode ver e se candidatar a demandas abertas na sua região
-- [ ] Após o serviço, contratante pode avaliar o prestador com estrelas e comentário
-- [ ] Perfil do prestador exibe média de avaliações e histórico de comentários
-- [ ] Usuários se cadastram e fazem login (contratante ou prestador)
-- [ ] Site responsivo, funcional no celular
+- [ ] Autenticação com email/senha
+- [ ] Perfil de usuário com foto e descrição
+- [ ] Sistema de avaliações entre usuários
+- [ ] Publicação de vagas/serviços com categoria e localização (bairro/CEP)
+- [ ] Feed de vagas e trabalhadores disponíveis filtrado por bairro/CEP
+- [ ] Chat interno entre usuários
+- [ ] Consumo de API externa via React Query
 
 ### Out of Scope
 
-- Processamento de pagamento — plataforma só conecta, negociação e pagamento são fora da plataforma
-- Aplicativo móvel nativo (iOS/Android) — web responsivo cobre a necessidade inicial
-- Verificação de documentos/identidade — deferred; avaliações cobrem confiança no v1
-- Chat em tempo real embutido — contratante entra em contato via informações do perfil
+- API/backend — será desenvolvida separadamente; o frontend consome via REST/React Query
+- Emprego formal com carteira assinada — foco em serviços informais e autônomos
+- Mapa interativo para localização — localização baseada em bairro/CEP cadastrado no perfil
+- Login social (Google, redes sociais) — autenticação própria por email/senha no v1
 
 ## Context
 
-- Inspiração: iFood, mas para serviços avulsos do bairro (economia informal/local)
-- Problema central: difícil achar prestadores de confiança perto de casa
-- Público-alvo: moradores de qualquer bairro do Brasil procurando serviços, e prestadores autônomos que não têm canal de divulgação digital
-- Plataforma: web responsiva (mobile-first), escalável por geolocalização desde o início
+- Frontend-only: a API é externa e já existirá quando o frontend for desenvolvido
+- Stack definida: TanStack Start (React), React Query para data fetching, Magic UI + Shadcn para design
+- Público-alvo: moradores de bairro que oferecem ou precisam de serviços informais/autônomos
+- A confiança entre usuários é construída via perfis com foto, descrição e sistema de avaliações
 
 ## Constraints
 
-- **Plataforma**: Web responsiva — nenhum app nativo no v1
-- **Pagamento**: Sem processamento de pagamento — fora do escopo por decisão de negócio
-- **Escopo geográfico**: Escalável desde o início, sem limite a um único bairro
+- **Tech Stack**: TanStack Start + React Query + Magic UI + Shadcn — escolha do projeto, não negociável
+- **Escopo**: Somente frontend — integração com API externa via contrato REST/JSON
+- **Localização**: Bairro/CEP no perfil, sem geolocalização em tempo real no v1
 
 ## Key Decisions
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Dois modos de matching (vitrine + demanda) | Cobre tanto prestador que se divulga quanto contratante que posta necessidade | — Pending |
-| Sem pagamento na plataforma | Reduz complexidade e regulação no v1; plataforma vira marketplace financeiro se incluir | — Pending |
-| Web responsiva em vez de app | Menor barreira de entrada; prestadores com celular básico acessam pelo browser | — Pending |
+| TanStack Start como framework | Escolha do desenvolvedor — SSR + rotas modernas com React | — Pending |
+| React Query para data fetching | Gerenciamento de cache e estados de loading/error sem boilerplate | — Pending |
+| Magic UI + Shadcn para UI | Design consistente e componentes prontos para acelerar desenvolvimento | — Pending |
+| API externa ao escopo | Backend será desenvolvido separadamente, frontend consome via contrato | — Pending |
+| Foco em serviços informais | Mercado local de bairro tem alta demanda por autônomos e pequenos serviços | — Pending |
 
 ## Evolution
 
-Este documento evolui a cada transição de fase e marco de milestone.
+This document evolves at phase transitions and milestone boundaries.
 
-**Após cada transição de fase** (via `/gsd-transition`):
-1. Requisitos invalidados? → Mover para Out of Scope com motivo
-2. Requisitos validados? → Mover para Validated com referência da fase
-3. Novos requisitos surgiram? → Adicionar em Active
-4. Decisões a registrar? → Adicionar em Key Decisions
-5. "What This Is" ainda preciso? → Atualizar se derivou
+**After each phase transition** (via `/gsd-transition`):
+1. Requirements invalidated? → Move to Out of Scope with reason
+2. Requirements validated? → Move to Validated with phase reference
+3. New requirements emerged? → Add to Active
+4. Decisions to log? → Add to Key Decisions
+5. "What This Is" still accurate? → Update if drifted
 
-**Após cada milestone** (via `/gsd-complete-milestone`):
-1. Revisão completa de todas as seções
-2. Verificação do Core Value — ainda é a prioridade certa?
-3. Auditoria do Out of Scope — motivos ainda válidos?
-4. Atualizar Context com estado atual
+**After each milestone** (via `/gsd-complete-milestone`):
+1. Full review of all sections
+2. Core Value check — still the right priority?
+3. Audit Out of Scope — reasons still valid?
+4. Update Context with current state
 
 ---
-*Last updated: 2026-04-02 after initialization*
+*Last updated: 2026-04-07 after initialization*
