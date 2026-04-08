@@ -5,13 +5,12 @@ import { z } from 'zod'
 import { useState } from 'react'
 import { Loader2 } from 'lucide-react'
 
-import { useLoginMutation } from '../hooks/use-auth'
+import { useRegisterMutation } from '../hooks/use-auth'
 import { isAuthenticated } from '../lib/auth'
 import { AnimatedGridPattern } from '../components/magic-ui/animated-grid-pattern'
 import { ShimmerButton } from '../components/magic-ui/shimmer-button'
 import { Card, CardContent, CardFooter, CardHeader } from '../components/ui/card'
 import { Input } from '../components/ui/input'
-import { Button } from '../components/ui/button'
 import { Alert, AlertDescription } from '../components/ui/alert'
 import { Separator } from '../components/ui/separator'
 import {
@@ -23,45 +22,57 @@ import {
   FormMessage,
 } from '../components/ui/form'
 
-export const Route = createFileRoute('/login')({
+export const Route = createFileRoute('/register')({
   beforeLoad: async () => {
     if (isAuthenticated()) {
       throw redirect({ to: '/' })
     }
   },
-  component: LoginPage,
+  component: RegisterPage,
 })
 
-const loginSchema = z.object({
-  email: z
-    .string()
-    .min(1, 'Este campo é obrigatório.')
-    .email('Insira um e-mail válido.'),
-  password: z.string().min(1, 'Este campo é obrigatório.'),
-})
-
-type LoginFormValues = z.infer<typeof loginSchema>
-
-function LoginPage() {
-  const router = useRouter()
-  const loginMutation = useLoginMutation()
-  const [serverError, setServerError] = useState<string | null>(null)
-
-  const form = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: { email: '', password: '' },
+const registerSchema = z
+  .object({
+    email: z
+      .string()
+      .min(1, 'Este campo é obrigatório.')
+      .email('Insira um e-mail válido.'),
+    password: z
+      .string()
+      .min(1, 'Este campo é obrigatório.')
+      .min(8, 'A senha precisa ter pelo menos 8 caracteres.'),
+    confirmPassword: z.string().min(1, 'Este campo é obrigatório.'),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: 'As senhas não coincidem.',
+    path: ['confirmPassword'],
   })
 
-  async function onSubmit(values: LoginFormValues) {
+type RegisterFormValues = z.infer<typeof registerSchema>
+
+function RegisterPage() {
+  const router = useRouter()
+  const registerMutation = useRegisterMutation()
+  const [serverError, setServerError] = useState<string | null>(null)
+
+  const form = useForm<RegisterFormValues>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: { email: '', password: '', confirmPassword: '' },
+  })
+
+  async function onSubmit(values: RegisterFormValues) {
     setServerError(null)
     try {
-      await loginMutation.mutateAsync(values)
+      await registerMutation.mutateAsync({
+        email: values.email,
+        password: values.password,
+      })
       router.navigate({ to: '/' })
     } catch (err: unknown) {
       const error = err as Error & { status?: number }
-      if (error.status === 401) {
+      if (error.status === 409 || error.status === 422) {
         setServerError(
-          'E-mail ou senha incorretos. Verifique seus dados e tente novamente.',
+          'Este e-mail já está cadastrado. Tente entrar ou use outro e-mail.',
         )
       } else {
         setServerError(
@@ -71,7 +82,7 @@ function LoginPage() {
     }
   }
 
-  const isLoading = loginMutation.isPending
+  const isLoading = registerMutation.isPending
 
   return (
     <div className="relative min-h-screen flex items-center justify-center bg-background px-4 py-16">
@@ -93,7 +104,7 @@ function LoginPage() {
             </p>
           </div>
           <h1 className="text-2xl font-semibold text-foreground text-center">
-            Entrar
+            Criar conta
           </h1>
         </CardHeader>
 
@@ -141,7 +152,7 @@ function LoginPage() {
                       <Input
                         type="password"
                         placeholder="••••••••"
-                        autoComplete="current-password"
+                        autoComplete="new-password"
                         aria-required="true"
                         disabled={isLoading}
                         {...field}
@@ -152,17 +163,26 @@ function LoginPage() {
                 )}
               />
 
-              <div className="flex justify-end -mt-2">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="text-primary h-auto p-0 text-sm"
-                  disabled
-                >
-                  Esqueci minha senha
-                </Button>
-              </div>
+              <FormField
+                control={form.control}
+                name="confirmPassword"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Confirmar senha</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="password"
+                        placeholder="••••••••"
+                        autoComplete="new-password"
+                        aria-required="true"
+                        disabled={isLoading}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               <ShimmerButton
                 type="submit"
@@ -172,10 +192,10 @@ function LoginPage() {
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Entrando…
+                    Criando conta…
                   </>
                 ) : (
-                  'Entrar'
+                  'Criar conta'
                 )}
               </ShimmerButton>
             </form>
@@ -185,12 +205,12 @@ function LoginPage() {
         <CardFooter className="flex flex-col gap-3 px-8 pb-8">
           <Separator />
           <p className="text-sm text-muted-foreground text-center">
-            Não tem uma conta?{' '}
+            Já tem uma conta?{' '}
             <a
-              href="/register"
+              href="/login"
               className="text-primary underline-offset-4 hover:underline font-medium"
             >
-              Criar conta
+              Entrar
             </a>
           </p>
         </CardFooter>
