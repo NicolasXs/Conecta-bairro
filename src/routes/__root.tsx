@@ -1,16 +1,8 @@
-import type { ReactNode } from 'react'
-import {
-  Outlet,
-  createRootRoute,
-  HeadContent,
-  Scripts,
-  Link,
-} from '@tanstack/react-router'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { useLogout } from '../hooks/use-auth'
-import { isAuthenticated } from '../lib/auth'
+import type { ReactNode } from "react";
+import { Outlet, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-import '../styles.css'
+import "../styles.css";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -19,52 +11,33 @@ const queryClient = new QueryClient({
       retry: 1,
     },
   },
-})
-
-function RootLayout() {
-  const logout = useLogout()
-  const authenticated = isAuthenticated()
-
-  return (
-    <>
-      {authenticated && (
-        <nav className="flex items-center justify-between px-4 py-3 border-b border-border bg-background">
-          <Link to="/" className="text-sm font-semibold text-foreground">
-            Conecta Bairro
-          </Link>
-          <button
-            onClick={logout}
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-            aria-label="Sair da conta"
-          >
-            Sair
-          </button>
-        </nav>
-      )}
-      <Outlet />
-    </>
-  )
-}
+});
 
 export const Route = createRootRoute({
   head: () => ({
     meta: [
-      { charSet: 'utf-8' },
-      { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-      { title: 'Conecta Bairro' },
+      { charSet: "utf-8" },
+      { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { title: "Conecta Bairro | Encontre Profissionais de Confiança" },
+    ],
+    links: [
+      {
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap",
+      },
     ],
   }),
   component: RootComponent,
-})
+});
 
 function RootComponent() {
   return (
     <RootDocument>
       <QueryClientProvider client={queryClient}>
-        <RootLayout />
+        <Outlet />
       </QueryClientProvider>
     </RootDocument>
-  )
+  );
 }
 
 function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
@@ -78,5 +51,5 @@ function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
         <Scripts />
       </body>
     </html>
-  )
+  );
 }

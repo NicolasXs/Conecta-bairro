@@ -1,19 +1,19 @@
-import { createFileRoute, redirect, useRouter } from '@tanstack/react-router'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
-import { useState } from 'react'
-import { Loader2 } from 'lucide-react'
+import { createFileRoute, redirect, useRouter } from "@tanstack/react-router";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { useState } from "react";
+import { Loader2 } from "lucide-react";
 
-import { useLoginMutation } from '../hooks/use-auth'
-import { isAuthenticated } from '../lib/auth'
-import { AnimatedGridPattern } from '../components/magic-ui/animated-grid-pattern'
-import { ShimmerButton } from '../components/magic-ui/shimmer-button'
-import { Card, CardContent, CardFooter, CardHeader } from '../components/ui/card'
-import { Input } from '../components/ui/input'
-import { Button } from '../components/ui/button'
-import { Alert, AlertDescription } from '../components/ui/alert'
-import { Separator } from '../components/ui/separator'
+import { useLoginMutation } from "../hooks/use-auth";
+import { isAuthenticated } from "../lib/auth";
+import { AnimatedGridPattern } from "../components/magic-ui/animated-grid-pattern";
+import { ShimmerButton } from "../components/magic-ui/shimmer-button";
+import { Card, CardContent, CardFooter, CardHeader } from "../components/ui/card";
+import { Input } from "../components/ui/input";
+import { Button } from "../components/ui/button";
+import { Alert, AlertDescription } from "../components/ui/alert";
+import { Separator } from "../components/ui/separator";
 import {
   Form,
   FormControl,
@@ -21,57 +21,50 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '../components/ui/form'
+} from "../components/ui/form";
 
-export const Route = createFileRoute('/login')({
+export const Route = createFileRoute("/login")({
   beforeLoad: async () => {
     if (isAuthenticated()) {
-      throw redirect({ to: '/' })
+      throw redirect({ to: "/" });
     }
   },
   component: LoginPage,
-})
+});
 
 const loginSchema = z.object({
-  email: z
-    .string()
-    .min(1, 'Este campo é obrigatório.')
-    .email('Insira um e-mail válido.'),
-  password: z.string().min(1, 'Este campo é obrigatório.'),
-})
+  email: z.string().min(1, "Este campo é obrigatório.").email("Insira um e-mail válido."),
+  password: z.string().min(1, "Este campo é obrigatório."),
+});
 
-type LoginFormValues = z.infer<typeof loginSchema>
+type LoginFormValues = z.infer<typeof loginSchema>;
 
 function LoginPage() {
-  const router = useRouter()
-  const loginMutation = useLoginMutation()
-  const [serverError, setServerError] = useState<string | null>(null)
+  const router = useRouter();
+  const loginMutation = useLoginMutation();
+  const [serverError, setServerError] = useState<string | null>(null);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { email: '', password: '' },
-  })
+    defaultValues: { email: "", password: "" },
+  });
 
   async function onSubmit(values: LoginFormValues) {
-    setServerError(null)
+    setServerError(null);
     try {
-      await loginMutation.mutateAsync(values)
-      router.navigate({ to: '/' })
+      await loginMutation.mutateAsync(values);
+      router.navigate({ to: "/dashboard" });
     } catch (err: unknown) {
-      const error = err as Error & { status?: number }
+      const error = err as Error & { status?: number };
       if (error.status === 401) {
-        setServerError(
-          'E-mail ou senha incorretos. Verifique seus dados e tente novamente.',
-        )
+        setServerError("E-mail ou senha incorretos. Verifique seus dados e tente novamente.");
       } else {
-        setServerError(
-          'Erro de conexão. Verifique sua internet e tente novamente.',
-        )
+        setServerError("Erro de conexão. Verifique sua internet e tente novamente.");
       }
     }
   }
 
-  const isLoading = loginMutation.isPending
+  const isLoading = loginMutation.isPending;
 
   return (
     <div className="relative min-h-screen flex items-center justify-center bg-background px-4 py-16">
@@ -88,13 +81,9 @@ function LoginPage() {
             <p className="text-[30px] font-semibold leading-[1.1] text-foreground">
               Conecta Bairro 🏘️
             </p>
-            <p className="text-sm text-muted-foreground mt-1">
-              Serviços perto de você
-            </p>
+            <p className="text-sm text-muted-foreground mt-1">Serviços perto de você</p>
           </div>
-          <h1 className="text-2xl font-semibold text-foreground text-center">
-            Entrar
-          </h1>
+          <h1 className="text-2xl font-semibold text-foreground text-center">Entrar</h1>
         </CardHeader>
 
         <CardContent className="px-8 pb-4">
@@ -175,7 +164,7 @@ function LoginPage() {
                     Entrando…
                   </>
                 ) : (
-                  'Entrar'
+                  "Entrar"
                 )}
               </ShimmerButton>
             </form>
@@ -185,7 +174,7 @@ function LoginPage() {
         <CardFooter className="flex flex-col gap-3 px-8 pb-8">
           <Separator />
           <p className="text-sm text-muted-foreground text-center">
-            Não tem uma conta?{' '}
+            Não tem uma conta?{" "}
             <a
               href="/register"
               className="text-primary underline-offset-4 hover:underline font-medium"
@@ -196,5 +185,5 @@ function LoginPage() {
         </CardFooter>
       </Card>
     </div>
-  )
+  );
 }
