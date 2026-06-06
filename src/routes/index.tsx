@@ -46,12 +46,12 @@ function LandingPage() {
 
       <main className="flex-1">
         {/* Hero Section */}
-        <section className="relative bg-card py-20 md:py-32 overflow-hidden">
+        <section className="relative bg-muted/30 dark:bg-muted/10 border-b border-outline-variant py-20 md:py-32 overflow-hidden">
           <div className="absolute inset-0 opacity-10 pointer-events-none">
-            <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-primary-container rounded-full blur-[120px]" />
-            <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-secondary-container rounded-full blur-[100px]" />
+            <div className="absolute top-0 right-0 w-150 h-150 bg-primary-container rounded-full blur-[120px]" />
+            <div className="absolute bottom-0 left-0 w-100 h-100 bg-secondary-container rounded-full blur-[100px]" />
           </div>
-          <div className="max-w-[1200px] mx-auto px-6 relative z-10">
+          <div className="max-w-300 mx-auto px-6 relative z-10">
             <div className="max-w-3xl">
               <h1 className="text-4xl md:text-5xl font-bold text-primary mb-4 leading-tight tracking-tight">
                 Encontre os melhores profissionais para sua casa
@@ -62,7 +62,7 @@ function LandingPage() {
               </p>
 
               {/* Search Bar */}
-              <div className="bg-white p-2 rounded-xl shadow-[0px_4px_12px_rgba(0,32,69,0.08)] flex flex-col md:flex-row gap-2 border border-outline-variant">
+              <div className="bg-card p-2 rounded-xl shadow-[0px_4px_12px_rgba(0,32,69,0.08)] flex flex-col md:flex-row gap-2 border border-outline-variant">
                 <div className="flex-1 flex items-center px-4 md:border-r border-outline-variant">
                   <span className="material-symbols-outlined text-primary mr-2">search</span>
                   <input
@@ -88,15 +88,15 @@ function LandingPage() {
         </section>
 
         {/* Categories Section */}
-        <section className="py-20 max-w-[1200px] mx-auto px-6">
+        <section className="py-20 max-w-300 mx-auto px-6">
           <h2 className="text-3xl font-bold text-primary mb-8">Categorias Populares</h2>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             {categories.map((cat) => (
               <div
                 key={cat.label}
-                className="group bg-surface-container-low p-6 rounded-xl border border-outline-variant hover:border-secondary hover:shadow-lg transition-all cursor-pointer text-center"
+                className="group bg-card p-6 rounded-xl border border-outline-variant hover:border-secondary hover:shadow-lg transition-all cursor-pointer text-center"
               >
-                <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm group-hover:bg-secondary-container transition-colors">
+                <div className="w-16 h-16 bg-muted dark:bg-muted/50 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm group-hover:bg-secondary/10 transition-colors">
                   <span className="material-symbols-outlined text-secondary text-3xl">
                     {cat.icon}
                   </span>
@@ -108,8 +108,11 @@ function LandingPage() {
         </section>
 
         {/* How it Works */}
-        <section id="how-it-works" className="scroll-mt-24 bg-surface-container-highest py-20">
-          <div className="max-w-[1200px] mx-auto px-6">
+        <section
+          id="how-it-works"
+          className="scroll-mt-24 bg-card border-y border-outline-variant py-20"
+        >
+          <div className="max-w-300 mx-auto px-6">
             <div className="text-center mb-16">
               <h2 className="text-4xl md:text-5xl font-bold text-primary">Como Funciona</h2>
               <p className="text-lg text-muted-foreground max-w-2xl mx-auto mt-4">
@@ -135,7 +138,7 @@ function LandingPage() {
                 },
               ].map((item) => (
                 <div key={item.step} className="text-center">
-                  <div className="w-12 h-12 bg-primary text-primary-foreground rounded-full flex items-center justify-center font-bold text-xl mx-auto mb-4">
+                  <div className="w-12 h-12 bg-secondary/10 text-secondary rounded-full flex items-center justify-center font-bold text-xl mx-auto mb-4">
                     {item.step}
                   </div>
                   <h3 className="text-xl font-semibold text-primary mb-2">{item.title}</h3>
@@ -147,7 +150,7 @@ function LandingPage() {
         </section>
 
         {/* Verified Professionals */}
-        <section className="py-20 max-w-[1200px] mx-auto px-6">
+        <section className="py-20 max-w-300 mx-auto px-6">
           <div className="flex justify-between items-end mb-8">
             <div>
               <h2 className="text-3xl font-bold text-primary">Profissionais Verificados</h2>
@@ -155,24 +158,24 @@ function LandingPage() {
                 Os especialistas mais bem avaliados desta semana.
               </p>
             </div>
-            <a
-              href="#"
+            <Link
+              to="/professionals"
               className="text-secondary font-bold flex items-center hover:underline no-underline"
             >
               Ver todos <span className="material-symbols-outlined ml-1">arrow_forward</span>
-            </a>
+            </Link>
           </div>
           <div className="grid md:grid-cols-3 gap-6">
             {professionals.map((pro) => (
               <div
                 key={pro.name}
-                className="bg-white rounded-xl border border-outline-variant overflow-hidden hover:shadow-xl transition-all"
+                className="bg-card rounded-xl border border-outline-variant overflow-hidden hover:shadow-xl transition-all"
               >
                 <img src={pro.img} alt={pro.name} className="w-full h-48 object-cover" />
                 <div className="p-6">
                   <div className="flex justify-between items-center mb-2">
                     <h3 className="text-xl font-semibold text-primary">{pro.name}</h3>
-                    <div className="flex items-center bg-secondary-container px-2 py-1 rounded">
+                    <div className="flex items-center bg-secondary/10 px-2.5 py-1 rounded">
                       <span className="material-symbols-outlined text-secondary text-sm mr-1">
                         star
                       </span>
@@ -185,9 +188,12 @@ function LandingPage() {
                   <p className="text-base text-muted-foreground mb-6 line-clamp-2">
                     {pro.description}
                   </p>
-                  <button className="w-full py-3 border-2 border-primary text-primary font-bold rounded-lg hover:bg-primary hover:text-primary-foreground transition-all">
+                  <Link
+                    to="/professionals"
+                    className="w-full py-3 border border-primary text-primary font-bold rounded-lg hover:bg-primary hover:text-primary-foreground transition-all flex items-center justify-center no-underline"
+                  >
                     Ver Perfil
-                  </button>
+                  </Link>
                 </div>
               </div>
             ))}
@@ -195,18 +201,18 @@ function LandingPage() {
         </section>
 
         {/* Professional CTA */}
-        <section id="for-pros" className="scroll-mt-24 bg-primary text-primary-foreground py-16">
-          <div className="max-w-[1200px] mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-8">
+        <section id="for-pros" className="scroll-mt-24 py-20 max-w-300 mx-auto px-6">
+          <div className="bg-card border border-outline-variant rounded-2xl p-8 md:p-12 flex flex-col md:flex-row items-center justify-between gap-8 shadow-sm">
             <div className="max-w-2xl text-center md:text-left">
-              <h2 className="text-3xl font-bold mb-4">Você é um profissional?</h2>
-              <p className="text-lg text-primary-foreground/90">
+              <h2 className="text-3xl font-bold text-primary mb-4">Você é um profissional?</h2>
+              <p className="text-lg text-muted-foreground">
                 Cadastre-se agora e aumente seus clientes. Tenha visibilidade na sua região e
                 gerencie seus pedidos em um só lugar.
               </p>
             </div>
             <Link
               to="/register"
-              className="bg-secondary-fixed text-on-secondary-fixed px-8 py-4 rounded-xl font-semibold text-lg hover:scale-105 transition-transform shadow-lg whitespace-nowrap no-underline"
+              className="bg-secondary text-secondary-foreground hover:bg-secondary/90 px-8 py-4 rounded-xl font-semibold text-lg hover:scale-105 transition-all shadow-md whitespace-nowrap no-underline"
             >
               Quero ser parceiro
             </Link>

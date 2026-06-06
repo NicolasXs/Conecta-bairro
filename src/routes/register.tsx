@@ -1,12 +1,14 @@
 import { createFileRoute, redirect, useRouter } from '@tanstack/react-router'
+import { useQuery } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Loader2 } from 'lucide-react'
 
 import { useRegisterMutation } from '../hooks/use-auth'
 import { isAuthenticated } from '../lib/auth'
+import { ApiError } from '../lib/api'
 import { AnimatedGridPattern } from '../components/magic-ui/animated-grid-pattern'
 import { ShimmerButton } from '../components/magic-ui/shimmer-button'
 import { Card, CardContent, CardFooter, CardHeader } from '../components/ui/card'
@@ -33,14 +35,38 @@ export const Route = createFileRoute('/register')({
 
 const registerSchema = z
   .object({
+    name: z
+      .string()
+      .trim()
+      .min(1, 'Este campo é obrigatório.')
+      .min(2, 'Informe pelo menos 2 caracteres.')
+      .max(100, 'Informe no máximo 100 caracteres.'),
     email: z
       .string()
+      .trim()
       .min(1, 'Este campo é obrigatório.')
       .email('Insira um e-mail válido.'),
+    cep: z
+      .string()
+      .trim()
+      .min(1, 'Este campo é obrigatório.')
+      .regex(/^\d{5}-?\d{3}$/, 'Insira um CEP válido.'),
+    bairro: z
+      .string()
+      .trim()
+      .min(1, 'Este campo é obrigatório.')
+      .min(2, 'Informe pelo menos 2 caracteres.')
+      .max(120, 'Informe no máximo 120 caracteres.'),
+    cidade: z
+      .string()
+      .trim()
+      .min(1, 'Este campo é obrigatório.')
+      .min(2, 'Informe pelo menos 2 caracteres.')
+      .max(120, 'Informe no máximo 120 caracteres.'),
     password: z
       .string()
       .min(1, 'Este campo é obrigatório.')
-      .min(8, 'A senha precisa ter pelo menos 8 caracteres.'),
+      .min(6, 'A senha precisa ter pelo menos 6 caracteres.'),
     confirmPassword: z.string().min(1, 'Este campo é obrigatório.'),
   })
   .refine((data) => data.password === data.confirmPassword, {
@@ -50,6 +76,26 @@ const registerSchema = z
 
 type RegisterFormValues = z.infer<typeof registerSchema>
 
+type ViaCepResponse = {
+  bairro?: string
+  localidade?: string
+  erro?: boolean
+}
+
+function formatCep(value: string): string {
+  const digitsOnly = value.replace(/\D/g, '').slice(0, 8)
+
+  if (digitsOnly.length <= 5) {
+    return digitsOnly
+  }
+
+  return `${digitsOnly.slice(0, 5)}-${digitsOnly.slice(5)}`
+}
+
+function getCepDigits(value: string): string {
+  return value.replace(/\D/g, '').slice(0, 8)
+}
+
 function RegisterPage() {
   const router = useRouter()
   const registerMutation = useRegisterMutation()
@@ -57,23 +103,98 @@ function RegisterPage() {
 
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
-    defaultValues: { email: '', password: '', confirmPassword: '' },
+    defaultValues: {
+      name: '',
+      email: '',
+      cep: '',
+      bairro: '',
+      cidade: '',
+      password: '',
+      confirmPassword: '',
+    },
   })
+
+  const cepValue = form.watch('cep')
+  const bairroValue = form.watch('bairro')
+  const cidadeValue = form.watch('cidade')
+  const cepDigits = getCepDigits(cepValue)
+
+  const viaCepQuery = useQuery({
+    queryKey: ['viacep', cepDigits],
+    enabled: cepDigits.length === 8,
+    retry: false,
+    staleTime: 1000 * 60 * 10,
+    queryFn: async () => {
+      const response = await fetch(`https://viacep.com.br/ws/${cepDigits}/json/`)
+
+      if (!response.ok) {
+        throw new Error('Falha ao consultar o CEP.')
+      }
+
+      const data = (await response.json()) as ViaCepResponse
+
+      if (data.erro) {
+        throw new Error('CEP não encontrado.')
+      }
+
+      return data
+    },
+  })
+
+  useEffect(() => {
+    if (!viaCepQuery.data) {
+      return
+    }
+
+    if (viaCepQuery.data.bairro) {
+      const currentBairro = bairroValue.trim().toLowerCase()
+      const viaCepBairro = viaCepQuery.data.bairro.trim().toLowerCase()
+
+      if (!currentBairro || currentBairro === viaCepBairro) {
+        form.setValue('bairro', viaCepQuery.data.bairro, {
+          shouldDirty: !currentBairro,
+          shouldTouch: true,
+          shouldValidate: true,
+        })
+      }
+    }
+
+    if (viaCepQuery.data.localidade) {
+      const currentCidade = cidadeValue.trim().toLowerCase()
+      const viaCepCidade = viaCepQuery.data.localidade.trim().toLowerCase()
+
+      if (!currentCidade || currentCidade === viaCepCidade) {
+        form.setValue('cidade', viaCepQuery.data.localidade, {
+          shouldDirty: !currentCidade,
+          shouldTouch: true,
+          shouldValidate: true,
+        })
+      }
+    }
+  }, [bairroValue, cidadeValue, form, viaCepQuery.data])
 
   async function onSubmit(values: RegisterFormValues) {
     setServerError(null)
     try {
       await registerMutation.mutateAsync({
+        name: values.name,
         email: values.email,
+        cep: values.cep,
+        bairro: values.bairro,
+        cidade: values.cidade,
         password: values.password,
       })
       router.navigate({ to: '/' })
     } catch (err: unknown) {
       const error = err as Error & { status?: number }
-      if (error.status === 409 || error.status === 422) {
+      if (error.status === 409) {
         setServerError(
           'Este e-mail já está cadastrado. Tente entrar ou use outro e-mail.',
         )
+      } else if (error.status === 400 || error.status === 422) {
+        setServerError('Dados inválidos. Revise os campos e tente novamente.')
+      } else if (error instanceof ApiError) {
+        setServerError(error.message)
       } else {
         setServerError(
           'Erro de conexão. Verifique sua internet e tente novamente.',
@@ -123,6 +244,27 @@ function RegisterPage() {
             >
               <FormField
                 control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nome</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="text"
+                        placeholder="Seu nome completo"
+                        autoComplete="name"
+                        aria-required="true"
+                        disabled={isLoading}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
                 name="email"
                 render={({ field }) => (
                   <FormItem>
@@ -133,6 +275,84 @@ function RegisterPage() {
                         placeholder="seu@email.com"
                         autoComplete="email"
                         aria-required="true"
+                        disabled={isLoading}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="cep"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>CEP</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="text"
+                        placeholder="00000-000"
+                        autoComplete="postal-code"
+                        inputMode="numeric"
+                        maxLength={9}
+                        aria-required="true"
+                        disabled={isLoading}
+                        {...field}
+                        onChange={(event) => {
+                          field.onChange(formatCep(event.target.value))
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                    {viaCepQuery.isFetching && cepDigits.length === 8 && (
+                      <p className="text-xs text-muted-foreground">Buscando endereco do CEP...</p>
+                    )}
+                    {!viaCepQuery.isFetching && viaCepQuery.isError && cepDigits.length === 8 && (
+                      <p className="text-xs text-destructive">Nao foi possivel localizar esse CEP.</p>
+                    )}
+                    {viaCepQuery.data && !viaCepQuery.isError && (
+                      <p className="text-xs text-muted-foreground">
+                        Bairro: {viaCepQuery.data.bairro || 'Nao informado'} | Cidade:{' '}
+                        {viaCepQuery.data.localidade || 'Nao informada'}
+                      </p>
+                    )}
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="bairro"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Bairro</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="text"
+                        placeholder="Seu bairro"
+                        autoComplete="address-level3"
+                        disabled={isLoading}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="cidade"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Cidade</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="text"
+                        placeholder="Sua cidade"
+                        autoComplete="address-level2"
                         disabled={isLoading}
                         {...field}
                       />

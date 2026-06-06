@@ -1,20 +1,20 @@
-// External API contract (assumed — to be confirmed with backend team):
-// POST /auth/login    → body: { email, password }    → 200: { token: string, user: { id, email } }
-// POST /auth/register → body: { email, password }    → 201: { token: string, user: { id, email } }
-// 401 → wrong credentials / email taken
-// 422 → validation error
-
-import { useMutation } from '@tanstack/react-query';
-import { useRouter } from '@tanstack/react-router';
-import { setToken, clearToken } from '../lib/auth';
-
-const API_URL = import.meta.env.VITE_API_URL;
+import { useMutation } from "@tanstack/react-query";
+import { useRouter } from "@tanstack/react-router";
+import { setToken, clearToken, setCurrentUser } from "../lib/auth";
+import { apiRequest } from "../lib/api";
 
 interface AuthResponse {
   token: string;
-  user: {
+  user?: {
     id: string;
     email: string;
+    name?: string;
+    role?: string;
+    bairro?: string | null;
+    cep?: string | null;
+    cidade?: string | null;
+    createdAt?: string;
+    updatedAt?: string;
   };
 }
 
@@ -24,36 +24,62 @@ interface LoginVars {
 }
 
 interface RegisterVars {
+  name: string;
   email: string;
   password: string;
+  bairro: string;
+  cep: string;
+  cidade: string;
+}
+
+type RawAuthResponse = {
+  token?: string;
+  accessToken?: string;
+  jwt?: string;
+  user?: AuthResponse["user"];
+  data?: {
+    token?: string;
+    accessToken?: string;
+    jwt?: string;
+    user?: AuthResponse["user"];
+  };
+};
+
+function normalizeAuthResponse(payload: RawAuthResponse): AuthResponse {
+  const token =
+    payload.token ||
+    payload.accessToken ||
+    payload.jwt ||
+    payload.data?.token ||
+    payload.data?.accessToken ||
+    payload.data?.jwt;
+
+  if (!token) {
+    throw new Error("A API de autenticação não retornou um token.");
+  }
+
+  return {
+    token,
+    user: payload.user || payload.data?.user,
+  };
 }
 
 async function loginFn(vars: LoginVars): Promise<AuthResponse> {
-  const res = await fetch(`${API_URL}/auth/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(vars),
+  const response = await apiRequest<RawAuthResponse>("/auth/login", {
+    method: "POST",
+    body: vars,
   });
-  if (!res.ok) {
-    const error = new Error('Login failed') as Error & { status: number };
-    error.status = res.status;
-    throw error;
-  }
-  return res.json();
+
+  return normalizeAuthResponse(response);
 }
 
 async function registerFn(vars: RegisterVars): Promise<AuthResponse> {
-  const res = await fetch(`${API_URL}/auth/register`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(vars),
+  const response = await apiRequest<RawAuthResponse>("/auth/register", {
+    method: "POST",
+    body: vars,
   });
-  if (!res.ok) {
-    const error = new Error('Register failed') as Error & { status: number };
-    error.status = res.status;
-    throw error;
-  }
-  return res.json();
+
+  return normalizeAuthResponse(response);
 }
 
 /** Mutation: log in with email + password. Sets token on success. */
@@ -62,6 +88,9 @@ export function useLoginMutation() {
     mutationFn: loginFn,
     onSuccess: (data) => {
       setToken(data.token);
+      if (data.user) {
+        setCurrentUser(data.user);
+      }
     },
   });
 }
@@ -72,6 +101,9 @@ export function useRegisterMutation() {
     mutationFn: registerFn,
     onSuccess: (data) => {
       setToken(data.token);
+      if (data.user) {
+        setCurrentUser(data.user);
+      }
     },
   });
 }
@@ -81,6 +113,6 @@ export function useLogout() {
   const router = useRouter();
   return function logout() {
     clearToken();
-    router.navigate({ to: '/login' });
+    router.navigate({ to: "/login" });
   };
 }

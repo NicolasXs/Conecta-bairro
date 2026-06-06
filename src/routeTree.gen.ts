@@ -10,14 +10,27 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as RegisterRouteImport } from './routes/register'
+import { Route as ProfileRouteImport } from './routes/profile'
+import { Route as ProfessionalsRouteImport } from './routes/professionals'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as WorkersWorkerIdRouteImport } from './routes/workers/$workerId'
 
 const RegisterRoute = RegisterRouteImport.update({
   id: '/register',
   path: '/register',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfessionalsRoute = ProfessionalsRouteImport.update({
+  id: '/professionals',
+  path: '/professionals',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -40,20 +53,31 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const WorkersWorkerIdRoute = WorkersWorkerIdRouteImport.update({
+  id: '/workers/$workerId',
+  path: '/workers/$workerId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
+  '/professionals': typeof ProfessionalsRoute
+  '/profile': typeof ProfileRoute
   '/register': typeof RegisterRoute
+  '/workers/$workerId': typeof WorkersWorkerIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
+  '/professionals': typeof ProfessionalsRoute
+  '/profile': typeof ProfileRoute
   '/register': typeof RegisterRoute
+  '/workers/$workerId': typeof WorkersWorkerIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -61,14 +85,42 @@ export interface FileRoutesById {
   '/about': typeof AboutRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
+  '/professionals': typeof ProfessionalsRoute
+  '/profile': typeof ProfileRoute
   '/register': typeof RegisterRoute
+  '/workers/$workerId': typeof WorkersWorkerIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/about' | '/dashboard' | '/login' | '/register'
+  fullPaths:
+    | '/'
+    | '/about'
+    | '/dashboard'
+    | '/login'
+    | '/professionals'
+    | '/profile'
+    | '/register'
+    | '/workers/$workerId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/about' | '/dashboard' | '/login' | '/register'
-  id: '__root__' | '/' | '/about' | '/dashboard' | '/login' | '/register'
+  to:
+    | '/'
+    | '/about'
+    | '/dashboard'
+    | '/login'
+    | '/professionals'
+    | '/profile'
+    | '/register'
+    | '/workers/$workerId'
+  id:
+    | '__root__'
+    | '/'
+    | '/about'
+    | '/dashboard'
+    | '/login'
+    | '/professionals'
+    | '/profile'
+    | '/register'
+    | '/workers/$workerId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -76,7 +128,10 @@ export interface RootRouteChildren {
   AboutRoute: typeof AboutRoute
   DashboardRoute: typeof DashboardRoute
   LoginRoute: typeof LoginRoute
+  ProfessionalsRoute: typeof ProfessionalsRoute
+  ProfileRoute: typeof ProfileRoute
   RegisterRoute: typeof RegisterRoute
+  WorkersWorkerIdRoute: typeof WorkersWorkerIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -86,6 +141,20 @@ declare module '@tanstack/react-router' {
       path: '/register'
       fullPath: '/register'
       preLoaderRoute: typeof RegisterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/professionals': {
+      id: '/professionals'
+      path: '/professionals'
+      fullPath: '/professionals'
+      preLoaderRoute: typeof ProfessionalsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -116,6 +185,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/workers/$workerId': {
+      id: '/workers/$workerId'
+      path: '/workers/$workerId'
+      fullPath: '/workers/$workerId'
+      preLoaderRoute: typeof WorkersWorkerIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -124,7 +200,10 @@ const rootRouteChildren: RootRouteChildren = {
   AboutRoute: AboutRoute,
   DashboardRoute: DashboardRoute,
   LoginRoute: LoginRoute,
+  ProfessionalsRoute: ProfessionalsRoute,
+  ProfileRoute: ProfileRoute,
   RegisterRoute: RegisterRoute,
+  WorkersWorkerIdRoute: WorkersWorkerIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

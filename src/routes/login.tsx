@@ -7,6 +7,7 @@ import { Loader2 } from "lucide-react";
 
 import { useLoginMutation } from "../hooks/use-auth";
 import { isAuthenticated } from "../lib/auth";
+import { ApiError } from "../lib/api";
 import { AnimatedGridPattern } from "../components/magic-ui/animated-grid-pattern";
 import { ShimmerButton } from "../components/magic-ui/shimmer-button";
 import { Card, CardContent, CardFooter, CardHeader } from "../components/ui/card";
@@ -34,7 +35,10 @@ export const Route = createFileRoute("/login")({
 
 const loginSchema = z.object({
   email: z.string().min(1, "Este campo é obrigatório.").email("Insira um e-mail válido."),
-  password: z.string().min(1, "Este campo é obrigatório."),
+  password: z
+    .string()
+    .min(1, "Este campo é obrigatório.")
+    .min(6, "A senha precisa ter pelo menos 6 caracteres."),
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
@@ -58,6 +62,8 @@ function LoginPage() {
       const error = err as Error & { status?: number };
       if (error.status === 401) {
         setServerError("E-mail ou senha incorretos. Verifique seus dados e tente novamente.");
+      } else if (error instanceof ApiError) {
+        setServerError(error.message);
       } else {
         setServerError("Erro de conexão. Verifique sua internet e tente novamente.");
       }
