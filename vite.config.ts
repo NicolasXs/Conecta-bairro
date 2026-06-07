@@ -6,7 +6,7 @@ import tailwindcss from '@tailwindcss/vite'
 
 const config = defineConfig({
   plugins: [
-    tanstackStart(), // must come before react()
+    tanstackStart({ spa: { enabled: true } }), // must come before react()
     tsconfigPaths({ projects: ['./tsconfig.json'] }),
     tailwindcss(),
     viteReact(),
