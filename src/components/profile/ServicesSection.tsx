@@ -384,6 +384,9 @@ export function ServicesSection({
                       {svc.description}
                     </p>
                     <div className="flex items-center gap-3 mt-1 flex-wrap">
+                      <span className="bg-secondary/10 text-secondary text-xs font-bold px-3 py-1 rounded-full">
+                        {svc.category}
+                      </span>
                       <p className="text-xs text-muted-foreground flex items-center gap-1">
                         <span className="material-symbols-outlined text-[13px]">location_on</span>
                         {svc.bairro}
@@ -397,9 +400,6 @@ export function ServicesSection({
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    <span className="bg-secondary/10 text-secondary text-xs font-bold px-3 py-1 rounded-full">
-                      {svc.category}
-                    </span>
                     <button
                       type="button"
                       onClick={() => openEditService(svc)}
