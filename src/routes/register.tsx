@@ -183,7 +183,7 @@ function RegisterPage() {
   return (
     <div className="min-h-screen flex">
       {/* ── Brand panel ─────────────────────────────────────────────────────── */}
-      <div className="hidden lg:flex lg:w-[38%] flex-col justify-between bg-primary dark:bg-[oklch(0.16_0.025_253)] px-12 py-10">
+      <div className="hidden lg:flex lg:w-[45%] flex-col justify-between bg-primary dark:bg-[oklch(0.16_0.025_253)] px-12 py-10">
         <Link to="/" className="no-underline">
           <span className="text-2xl font-bold text-white tracking-tight">
             Conecta Bairro
