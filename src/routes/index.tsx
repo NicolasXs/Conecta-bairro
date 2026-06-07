@@ -87,6 +87,7 @@ function FeaturedServiceCard({ svc }: { svc: Service }) {
 function LandingPage() {
   const navigate = useNavigate();
   const [searchQ, setSearchQ] = useState("");
+  const [showAllCategories, setShowAllCategories] = useState(false);
 
   const categoriesQuery = useQuery<Category[]>({
     queryKey: ["categories"],
@@ -101,6 +102,7 @@ function LandingPage() {
   });
 
   const categories = categoriesQuery.data ?? [];
+  const visibleCategories = showAllCategories ? categories : categories.slice(0, 5);
   const featuredServices = (popularQuery.data ?? []).slice(0, 3);
 
   function handleSearch(e: React.FormEvent) {
@@ -174,23 +176,42 @@ function LandingPage() {
           )}
 
           {!categoriesQuery.isLoading && categories.length > 0 && (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-              {categories.map((cat) => (
-                <Link
-                  key={cat.id}
-                  to="/professionals"
-                  search={{ category: cat.name, workerId: undefined, q: undefined }}
-                  className="group bg-card p-6 rounded-xl border border-outline-variant hover:border-secondary hover:shadow-lg transition-all text-center no-underline"
-                >
-                  <div className="w-16 h-16 bg-muted dark:bg-muted/50 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm group-hover:bg-secondary/10 transition-colors">
-                    <span className="material-symbols-outlined text-secondary text-3xl">
-                      {categoryIcon(cat.name)}
+            <>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                {visibleCategories.map((cat) => (
+                  <Link
+                    key={cat.id}
+                    to="/professionals"
+                    search={{ category: cat.name, workerId: undefined, q: undefined }}
+                    className="group bg-card p-6 rounded-xl border border-outline-variant hover:border-secondary hover:shadow-lg transition-all text-center no-underline"
+                  >
+                    <div className="w-16 h-16 bg-muted dark:bg-muted/50 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm group-hover:bg-secondary/10 transition-colors">
+                      <span className="material-symbols-outlined text-secondary text-3xl">
+                        {categoryIcon(cat.name)}
+                      </span>
+                    </div>
+                    <span className="text-base font-semibold block text-foreground">{cat.name}</span>
+                  </Link>
+                ))}
+              </div>
+
+              {categories.length > 5 && (
+                <div className="mt-6 text-center">
+                  <button
+                    type="button"
+                    onClick={() => setShowAllCategories((prev) => !prev)}
+                    className="inline-flex items-center gap-1.5 text-sm font-semibold text-secondary hover:opacity-80 transition-opacity"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">
+                      {showAllCategories ? "expand_less" : "expand_more"}
                     </span>
-                  </div>
-                  <span className="text-base font-semibold block text-foreground">{cat.name}</span>
-                </Link>
-              ))}
-            </div>
+                    {showAllCategories
+                      ? "Ver menos"
+                      : "Ver mais categorias"}
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </section>
 

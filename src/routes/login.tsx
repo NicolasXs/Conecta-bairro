@@ -115,6 +115,13 @@ function LoginPage() {
 
       {/* ── Form panel ──────────────────────────────────────────────────────── */}
       <div className="relative flex flex-1 items-center justify-center bg-background px-6 py-12">
+        <Link
+          to="/"
+          className="absolute top-5 right-5 w-9 h-9 flex items-center justify-center rounded-full bg-card border border-outline-variant text-muted-foreground hover:text-primary hover:border-primary transition-all no-underline"
+          title="Voltar ao início"
+        >
+          <span className="material-symbols-outlined text-[20px]">home</span>
+        </Link>
         <AnimatedGridPattern
           className="absolute inset-0 -z-10 opacity-30 mask-[radial-gradient(600px_circle_at_center,white,transparent)]"
           numSquares={30}
