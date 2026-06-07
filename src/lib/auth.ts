@@ -1,5 +1,5 @@
-const TOKEN_KEY = "cnb_auth_token";
-const USER_KEY = "cnb_auth_user";
+const TOKEN_KEY = "Conecta-bairro_auth_token";
+const USER_KEY = "Conecta-bairro_auth_user";
 
 export type AuthUser = {
   id: string;

@@ -41,19 +41,19 @@ Progress: [██░░░░░░░░] 25%
 
 **By Phase:**
 
-| Phase | Plans | Total | Avg/Plan |
-|-------|-------|-------|----------|
-| 1. Foundation & Auth | 3 | — | — |
-| 2. User Profiles & Reviews | — | — | — |
-| 3. Posts & Feed | — | — | — |
-| 4. Chat | — | — | — |
+| Phase                      | Plans | Total | Avg/Plan |
+| -------------------------- | ----- | ----- | -------- |
+| 1. Foundation & Auth       | 3     | —     | —        |
+| 2. User Profiles & Reviews | —     | —     | —        |
+| 3. Posts & Feed            | —     | —     | —        |
+| 4. Chat                    | —     | —     | —        |
 
 **Recent Trend:**
 
 - Last 5 plans: 3 completed
 - Trend: —
 
-*Updated after each plan completion*
+_Updated after each plan completion_
 
 ## Accumulated Context
 
@@ -68,7 +68,7 @@ Recent decisions affecting current work:
 - Init: API is external — frontend consumes via REST/React Query contract
 - Phase 1: TanStack Start v1.167 uses tanstackStart() vite plugin (no app.config.ts)
 - Phase 1: shadcn radix-luma preset used (Lucide + Inter Variable) — form.tsx created manually
-- Phase 1: Auth token stored under key `cnb_auth_token` in localStorage
+- Phase 1: Auth token stored under key `Conecta-bairro_auth_token` in localStorage
 
 ### Pending Todos
 
