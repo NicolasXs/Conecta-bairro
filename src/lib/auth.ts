@@ -6,6 +6,8 @@ export type AuthUser = {
   email: string;
   name?: string;
   role?: string;
+  avatarUrl?: string | null;
+  coverUrl?: string | null;
   bairro?: string | null;
   cep?: string | null;
   cidade?: string | null;

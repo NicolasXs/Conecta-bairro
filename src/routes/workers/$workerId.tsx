@@ -1,82 +1,18 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
-import Header from "../../components/Header";
-import Footer from "../../components/Footer";
-import { apiRequest, ApiError } from "../../lib/api";
-import { isAuthenticated, getAuthenticatedUserId } from "../../lib/auth";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
+import { StarDisplay } from "@/components/StarDisplay";
+import { apiRequest, ApiError } from "@/lib/api";
+import { formatDate, averageScore, formatPrice } from "@/lib/utils";
+import { isAuthenticated, getAuthenticatedUserId } from "@/lib/auth";
+import type { Rating, Service, WorkerProfile } from "@/types";
 
 export const Route = createFileRoute("/workers/$workerId")({
-  component: WorkerProfilePage,
+  component: PublicProfilePage,
 });
-
-// ── Types ────────────────────────────────────────────────────────────────────
-
-type WorkerProfile = {
-  id: string;
-  name: string;
-  email?: string;
-  role?: string;
-  bairro?: string | null;
-  cidade?: string | null;
-  cep?: string | null;
-  createdAt?: string;
-};
-
-type Rating = {
-  id: string;
-  score: number;
-  comment?: string | null;
-  createdAt?: string;
-  reviewer?: { id: string; name?: string } | null;
-  client?: { id: string; name?: string } | null;
-};
-
-type Service = {
-  id: string;
-  title: string;
-  description: string;
-  category: string;
-  bairro: string;
-  worker?: { id: string; name: string };
-};
-
-// ── Helpers ──────────────────────────────────────────────────────────────────
-
-function formatDate(value?: string) {
-  if (!value) return "-";
-  try {
-    return new Date(value).toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
-  } catch {
-    return "-";
-  }
-}
-
-function averageScore(ratings: Rating[]) {
-  if (!ratings.length) return null;
-  const sum = ratings.reduce((acc, r) => acc + r.score, 0);
-  return (sum / ratings.length).toFixed(1);
-}
-
-function StarDisplay({ score, size = "md" }: { score: number; size?: "sm" | "md" | "lg" }) {
-  const sizeClass = size === "lg" ? "text-2xl" : size === "sm" ? "text-sm" : "text-lg";
-  return (
-    <div className={`flex gap-0.5 ${sizeClass}`}>
-      {[1, 2, 3, 4, 5].map((star) => (
-        <span
-          key={star}
-          className={`material-symbols-outlined select-none ${
-            star <= score ? "text-yellow-400" : "text-muted-foreground/30"
-          }`}
-          style={{ fontVariationSettings: `'FILL' ${star <= score ? 1 : 0}` }}
-        >
-          star
-        </span>
-      ))}
-    </div>
-  );
-}
 
 function StarPicker({ value, onChange }: { value: number; onChange: (v: number) => void }) {
   const [hovered, setHovered] = useState(0);
@@ -105,9 +41,7 @@ function StarPicker({ value, onChange }: { value: number; onChange: (v: number) 
   );
 }
 
-// ── Component ────────────────────────────────────────────────────────────────
-
-function WorkerProfilePage() {
+function PublicProfilePage() {
   const { workerId } = Route.useParams();
   const queryClient = useQueryClient();
   const loggedIn = isAuthenticated();
@@ -117,6 +51,7 @@ function WorkerProfilePage() {
   const [comment, setComment] = useState("");
   const [feedbackMsg, setFeedbackMsg] = useState<string | null>(null);
   const [feedbackError, setFeedbackError] = useState<string | null>(null);
+  const [pendingLink, setPendingLink] = useState<{ label: string; value: string } | null>(null);
 
   const profileQuery = useQuery<WorkerProfile>({
     queryKey: ["worker-profile", workerId],
@@ -129,12 +64,8 @@ function WorkerProfilePage() {
   });
 
   const servicesQuery = useQuery<Service[]>({
-    queryKey: ["services", { bairro: profileQuery.data?.bairro ?? "" }],
-    enabled: Boolean(profileQuery.data?.bairro),
-    queryFn: () =>
-      apiRequest<Service[]>(
-        `/services?bairro=${encodeURIComponent(profileQuery.data?.bairro ?? "")}`,
-      ),
+    queryKey: ["services", { workerId }],
+    queryFn: () => apiRequest<Service[]>(`/users/${encodeURIComponent(workerId)}/services`),
   });
 
   const ratingMutation = useMutation({
@@ -160,10 +91,20 @@ function WorkerProfilePage() {
 
   const ratings = ratingsQuery.data ?? [];
   const avg = averageScore(ratings);
-  const workerServices = (servicesQuery.data ?? []).filter((s) => s.worker?.id === workerId);
+  const workerServices = servicesQuery.data ?? [];
+  const isOwnProfile = currentUserId === workerId;
 
-  const canSubmit =
-    loggedIn && score > 0 && !ratingMutation.isPending && currentUserId !== workerId;
+  const canSubmit = loggedIn && score > 0 && !ratingMutation.isPending && !isOwnProfile;
+
+  function looksLikeUrl(value: string) {
+    return /^https?:\/\//i.test(value) || /^www\./i.test(value);
+  }
+
+  function resolveUrl(value: string): string | null {
+    if (/^https?:\/\//i.test(value)) return value;
+    if (/^www\./i.test(value)) return `https://${value}`;
+    return null;
+  }
 
   function handleSubmitRating(e: React.FormEvent) {
     e.preventDefault();
@@ -172,17 +113,31 @@ function WorkerProfilePage() {
     ratingMutation.mutate();
   }
 
+  const profile = profileQuery.data;
+
   return (
     <div className="bg-background text-foreground antialiased min-h-screen flex flex-col">
       <Header />
 
       <main className="flex-1 py-12">
         <div className="max-w-300 mx-auto px-6">
-          {/* ── Loading / erro de perfil ─────────────────────── */}
           {profileQuery.isLoading && (
-            <div className="animate-pulse space-y-4">
-              <div className="h-10 bg-muted rounded w-1/3" />
-              <div className="h-5 bg-muted rounded w-1/4" />
+            <div className="animate-pulse space-y-6">
+              <div className="bg-card border border-outline-variant rounded-2xl overflow-hidden">
+                <div className="h-32 bg-muted" />
+                <div className="px-8 pb-6 -mt-10 flex gap-5 items-end">
+                  <div className="w-24 h-24 rounded-full bg-muted shrink-0" />
+                  <div className="space-y-3 flex-1 mb-2">
+                    <div className="h-7 bg-muted rounded w-1/3" />
+                    <div className="h-4 bg-muted rounded w-1/4" />
+                  </div>
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="h-24 bg-muted rounded-2xl" />
+                ))}
+              </div>
             </div>
           )}
 
@@ -192,65 +147,162 @@ function WorkerProfilePage() {
             </div>
           )}
 
-          {profileQuery.data && (
-            <>
-              {/* ── Cabeçalho do perfil ──────────────────────── */}
-              <div className="flex flex-col md:flex-row gap-6 items-start md:items-center mb-10">
-                <div className="w-20 h-20 rounded-full bg-secondary/10 flex items-center justify-center shrink-0 border-2 border-secondary/20">
-                  <span className="material-symbols-outlined text-secondary text-4xl">person</span>
-                </div>
-                <div className="flex-1">
-                  <h1 className="text-3xl font-bold text-primary mb-1">{profileQuery.data.name}</h1>
-                  <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-                    {(profileQuery.data.bairro || profileQuery.data.cidade) && (
-                      <span className="flex items-center gap-1">
-                        <span className="material-symbols-outlined text-[16px]">location_on</span>
-                        {[profileQuery.data.bairro, profileQuery.data.cidade]
-                          .filter(Boolean)
-                          .join(", ")}
+          {profile && (
+            <div className="space-y-8">
+              {/* Hero card */}
+              <div className="bg-card border border-outline-variant rounded-2xl overflow-hidden shadow-sm">
+                <div className="h-32 bg-linear-to-br from-primary/10 via-secondary/10 to-secondary/20" />
+                <div className="px-6 md:px-8 pb-6 -mt-12">
+                  <div className="flex flex-col md:flex-row gap-5 items-start md:items-end">
+                    <div className="w-24 h-24 rounded-full bg-card border-4 border-card shadow-md flex items-center justify-center shrink-0">
+                      <span className="material-symbols-outlined text-secondary text-5xl">
+                        person
                       </span>
-                    )}
-                    {profileQuery.data.createdAt && (
-                      <span className="flex items-center gap-1">
-                        <span className="material-symbols-outlined text-[16px]">
-                          calendar_month
-                        </span>
-                        Membro desde {formatDate(profileQuery.data.createdAt)}
-                      </span>
-                    )}
-                  </div>
-                </div>
+                    </div>
+                    <div className="flex-1 mt-2 md:mt-0 md:mb-1">
+                      <h1 className="text-3xl font-bold text-primary">{profile.name}</h1>
+                      <div className="flex flex-wrap items-center gap-4 mt-1.5 text-sm text-muted-foreground">
+                        {(profile.bairro || profile.cidade) && (
+                          <span className="flex items-center gap-1">
+                            <span className="material-symbols-outlined text-[16px]">
+                              location_on
+                            </span>
+                            {[profile.bairro, profile.cidade].filter(Boolean).join(", ")}
+                          </span>
+                        )}
+                        {profile.createdAt && (
+                          <span className="flex items-center gap-1">
+                            <span className="material-symbols-outlined text-[16px]">
+                              calendar_month
+                            </span>
+                            Membro desde{" "}
+                            {formatDate(profile.createdAt, { month: "long", year: "numeric" })}
+                          </span>
+                        )}
+                      </div>
+                    </div>
 
-                {/* Badge de nota média */}
-                {avg && (
-                  <div className="bg-card border border-outline-variant rounded-2xl px-6 py-4 text-center shadow-sm shrink-0">
-                    <p className="text-3xl font-bold text-primary">{avg}</p>
-                    <StarDisplay score={Math.round(parseFloat(avg))} size="sm" />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {ratings.length} {ratings.length === 1 ? "avaliação" : "avaliações"}
-                    </p>
+                    <div className="flex items-center gap-3 shrink-0">
+                      {avg && (
+                        <div className="bg-background border border-outline-variant rounded-2xl px-5 py-3 text-center shadow-sm">
+                          <p className="text-2xl font-bold text-primary">{avg}</p>
+                          <StarDisplay score={Math.round(parseFloat(avg))} size="sm" />
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {ratings.length}{" "}
+                            {ratings.length === 1 ? "avaliação" : "avaliações"}
+                          </p>
+                        </div>
+                      )}
+                      {isOwnProfile && (
+                        <Link
+                          to="/profile"
+                          className="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-outline-variant text-sm font-semibold hover:border-secondary hover:text-secondary transition-all no-underline"
+                        >
+                          <span className="material-symbols-outlined text-[18px]">edit</span>
+                          Editar perfil
+                        </Link>
+                      )}
+                    </div>
                   </div>
-                )}
+                </div>
               </div>
 
+              {/* Stats */}
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <div className="bg-card border border-outline-variant rounded-2xl p-5 text-center shadow-sm">
+                  <p className="text-3xl font-bold text-primary">{workerServices.length}</p>
+                  <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider mt-1">
+                    Serviços
+                  </p>
+                </div>
+                <div className="bg-card border border-outline-variant rounded-2xl p-5 text-center shadow-sm">
+                  <p className="text-3xl font-bold text-primary">{ratings.length}</p>
+                  <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider mt-1">
+                    Avaliações
+                  </p>
+                </div>
+                <div className="bg-card border border-outline-variant rounded-2xl p-5 text-center shadow-sm col-span-2 md:col-span-1">
+                  <p className="text-3xl font-bold text-primary">{avg ?? "—"}</p>
+                  <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider mt-1">
+                    Média
+                  </p>
+                </div>
+              </div>
+
+              {/* Description */}
+              {profile.description && (
+                <div className="bg-card border border-outline-variant rounded-2xl p-6 shadow-sm">
+                  <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-3">
+                    Sobre
+                  </h2>
+                  <p className="text-sm text-foreground leading-relaxed whitespace-pre-line">
+                    {profile.description}
+                  </p>
+                </div>
+              )}
+
+              {/* Contact links */}
+              {profile.contactLinks && profile.contactLinks.length > 0 && (
+                <div className="bg-card border border-outline-variant rounded-2xl p-6 shadow-sm">
+                  <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-3">
+                    Contato
+                  </h2>
+                  <ul className="flex flex-wrap gap-3">
+                    {profile.contactLinks.map((link, i) => (
+                      <li key={i}>
+                        <button
+                          type="button"
+                          onClick={() => setPendingLink(link)}
+                          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-outline-variant text-sm font-semibold text-secondary hover:border-secondary hover:bg-secondary/5 transition-all"
+                        >
+                          <span className="material-symbols-outlined text-[16px]">
+                            {looksLikeUrl(link.value) ? "link" : "tag"}
+                          </span>
+                          {link.label}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Main grid */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-                {/* ── Coluna principal ─────────────────────────── */}
                 <div className="lg:col-span-2 space-y-8">
-                  {/* Serviços */}
-                  {workerServices.length > 0 && (
-                    <section className="bg-card border border-outline-variant rounded-2xl overflow-hidden">
-                      <div className="border-b border-outline-variant bg-muted/20 px-6 py-4">
-                        <h2 className="text-lg font-bold text-primary">Serviços Oferecidos</h2>
+                  {/* Services */}
+                  <section className="bg-card border border-outline-variant rounded-2xl overflow-hidden shadow-sm">
+                    <div className="border-b border-outline-variant bg-muted/20 px-6 py-4">
+                      <h2 className="text-lg font-bold text-primary">Serviços Oferecidos</h2>
+                    </div>
+                    {servicesQuery.isLoading ? (
+                      <div className="p-6 animate-pulse space-y-4">
+                        {[1, 2].map((i) => (
+                          <div key={i} className="h-16 bg-muted rounded-xl" />
+                        ))}
                       </div>
+                    ) : workerServices.length === 0 ? (
+                      <div className="px-6 py-14 text-center text-muted-foreground text-sm">
+                        <span className="material-symbols-outlined text-4xl block mb-3 opacity-40">
+                          handyman
+                        </span>
+                        Nenhum serviço cadastrado.
+                      </div>
+                    ) : (
                       <div className="divide-y divide-outline-variant">
                         {workerServices.map((svc) => (
                           <div key={svc.id} className="px-6 py-5">
                             <div className="flex items-start justify-between gap-4">
-                              <div>
+                              <div className="flex-1 min-w-0">
                                 <p className="font-bold text-foreground">{svc.title}</p>
                                 <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
                                   {svc.description}
                                 </p>
+                                {formatPrice(svc.price) && (
+                                  <p className="text-sm font-bold text-secondary mt-1 flex items-center gap-1">
+                                    <span className="material-symbols-outlined text-[15px]">payments</span>
+                                    {formatPrice(svc.price)}
+                                  </p>
+                                )}
                               </div>
                               <span className="shrink-0 bg-secondary/10 text-secondary text-xs font-bold px-3 py-1 rounded-full">
                                 {svc.category}
@@ -259,11 +311,11 @@ function WorkerProfilePage() {
                           </div>
                         ))}
                       </div>
-                    </section>
-                  )}
+                    )}
+                  </section>
 
-                  {/* Avaliações */}
-                  <section className="bg-card border border-outline-variant rounded-2xl overflow-hidden">
+                  {/* Ratings list */}
+                  <section className="bg-card border border-outline-variant rounded-2xl overflow-hidden shadow-sm">
                     <div className="border-b border-outline-variant bg-muted/20 px-6 py-4">
                       <h2 className="text-lg font-bold text-primary">
                         Avaliações
@@ -274,9 +326,8 @@ function WorkerProfilePage() {
                         )}
                       </h2>
                     </div>
-
-                    {ratingsQuery.isLoading && (
-                      <div className="p-6 space-y-4 animate-pulse">
+                    {ratingsQuery.isLoading ? (
+                      <div className="p-6 animate-pulse space-y-4">
                         {[1, 2].map((i) => (
                           <div key={i} className="space-y-2">
                             <div className="h-4 bg-muted rounded w-1/4" />
@@ -284,22 +335,16 @@ function WorkerProfilePage() {
                           </div>
                         ))}
                       </div>
-                    )}
-
-                    {!ratingsQuery.isLoading && ratings.length === 0 && (
-                      <div className="px-6 py-10 text-center text-muted-foreground text-sm">
+                    ) : ratings.length === 0 ? (
+                      <div className="px-6 py-14 text-center text-muted-foreground text-sm">
                         <span className="material-symbols-outlined text-4xl block mb-3 opacity-40">
                           rate_review
                         </span>
                         Nenhuma avaliação ainda. Seja o primeiro a avaliar!
                       </div>
-                    )}
-
-                    {ratings.length > 0 && (
+                    ) : (
                       <div className="divide-y divide-outline-variant">
                         {ratings.map((r) => {
-                          const reviewerName =
-                            r.reviewer?.name || r.client?.name || "Usuário anônimo";
                           return (
                             <div key={r.id} className="px-6 py-5">
                               <div className="flex items-center justify-between mb-2">
@@ -310,7 +355,7 @@ function WorkerProfilePage() {
                                     </span>
                                   </div>
                                   <span className="text-sm font-semibold text-foreground">
-                                    {reviewerName}
+                                    {r.clientName ?? "Usuário"}
                                   </span>
                                 </div>
                                 <div className="flex items-center gap-2">
@@ -335,14 +380,12 @@ function WorkerProfilePage() {
                   </section>
                 </div>
 
-                {/* ── Sidebar ──────────────────────────────────── */}
-                <div className="space-y-6">
-                  {/* Formulário de avaliação */}
+                {/* Rating form sidebar */}
+                <div>
                   <section className="bg-card border border-outline-variant rounded-2xl overflow-hidden shadow-sm">
                     <div className="border-b border-outline-variant bg-muted/20 px-6 py-4">
                       <h3 className="text-lg font-bold text-primary">Avaliar este profissional</h3>
                     </div>
-
                     <div className="p-6">
                       {!loggedIn && (
                         <div className="text-center text-sm text-muted-foreground space-y-3">
@@ -350,22 +393,22 @@ function WorkerProfilePage() {
                             lock
                           </span>
                           <p>Você precisa estar logado para enviar uma avaliação.</p>
-                          <a
-                            href="/login"
+                          <Link
+                            to="/login"
                             className="inline-block px-5 py-2.5 bg-secondary text-secondary-foreground font-bold rounded-xl text-sm no-underline"
                           >
                             Fazer login
-                          </a>
+                          </Link>
                         </div>
                       )}
 
-                      {loggedIn && currentUserId === workerId && (
+                      {loggedIn && isOwnProfile && (
                         <p className="text-sm text-muted-foreground text-center py-2">
                           Você não pode avaliar o seu próprio perfil.
                         </p>
                       )}
 
-                      {loggedIn && currentUserId !== workerId && (
+                      {loggedIn && !isOwnProfile && (
                         <form onSubmit={handleSubmitRating} className="space-y-5">
                           <div>
                             <label className="block text-xs font-bold uppercase tracking-wider mb-3 text-muted-foreground">
@@ -419,12 +462,96 @@ function WorkerProfilePage() {
                   </section>
                 </div>
               </div>
-            </>
+            </div>
           )}
         </div>
       </main>
 
       <Footer />
+
+      {/* External link warning modal */}
+      {pendingLink && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+          onClick={() => setPendingLink(null)}
+        >
+          <div
+            className="bg-card border border-outline-variant rounded-2xl shadow-xl max-w-md w-full p-6 space-y-5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start gap-3">
+              <span className="material-symbols-outlined text-yellow-500 text-2xl shrink-0">
+                warning
+              </span>
+              <div>
+                <h3 className="font-bold text-primary text-base">Conteúdo externo</h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Este conteúdo foi adicionado pelo próprio prestador. Não verificamos nem
+                  garantimos a segurança do destino. Prossiga com cautela.
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-muted/30 rounded-xl px-4 py-3 space-y-1">
+              <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                {pendingLink.label}
+              </p>
+              <p className="text-sm font-mono break-all text-foreground">{pendingLink.value}</p>
+            </div>
+
+            {looksLikeUrl(pendingLink.value) ? (
+              <a
+                href={`https://transparencyreport.google.com/safe-browsing/search?url=${encodeURIComponent(resolveUrl(pendingLink.value) ?? pendingLink.value)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 text-xs text-secondary font-semibold hover:underline no-underline"
+              >
+                <span className="material-symbols-outlined text-[16px]">security</span>
+                Verificar segurança via Google Transparency Report
+              </a>
+            ) : (
+              <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-[15px]">info</span>
+                Este conteúdo não é um link — copie e use como preferir.
+              </p>
+            )}
+
+            <div className="flex gap-3 pt-1">
+              <button
+                type="button"
+                onClick={() => setPendingLink(null)}
+                className="flex-1 py-2.5 rounded-xl border border-outline-variant text-sm font-semibold text-muted-foreground hover:border-primary hover:text-primary transition-all"
+              >
+                Cancelar
+              </button>
+              {resolveUrl(pendingLink.value) ? (
+                <a
+                  href={resolveUrl(pendingLink.value)!}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => setPendingLink(null)}
+                  className="flex-1 py-2.5 rounded-xl bg-secondary text-secondary-foreground text-sm font-bold text-center hover:opacity-90 transition-all no-underline flex items-center justify-center gap-1.5"
+                >
+                  <span className="material-symbols-outlined text-[16px]">open_in_new</span>
+                  Prosseguir
+                </a>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(pendingLink.value);
+                    setPendingLink(null);
+                  }}
+                  className="flex-1 py-2.5 rounded-xl bg-secondary text-secondary-foreground text-sm font-bold hover:opacity-90 transition-all flex items-center justify-center gap-1.5"
+                >
+                  <span className="material-symbols-outlined text-[16px]">content_copy</span>
+                  Copiar
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

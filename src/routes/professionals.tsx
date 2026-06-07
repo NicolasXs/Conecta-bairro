@@ -1,81 +1,25 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
+
 import Header from "../components/Header";
 import Footer from "../components/Footer";
-import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { WorkerDrawer } from "../components/WorkerDrawer";
 import { apiRequest } from "../lib/api";
-
-// ── Tipos auxiliares do modal ─────────────────────────────────────────────────
-
-type WorkerProfile = {
-  id: string;
-  name: string;
-  bairro?: string | null;
-  cidade?: string | null;
-  createdAt?: string;
-};
-
-type Rating = {
-  id: string;
-  score: number;
-  comment?: string | null;
-  createdAt?: string;
-  reviewer?: { id: string; name?: string } | null;
-  client?: { id: string; name?: string } | null;
-};
-
-function formatDate(value?: string) {
-  if (!value) return "-";
-  try {
-    return new Date(value).toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
-  } catch {
-    return "-";
-  }
-}
-
-function averageScore(ratings: Rating[]) {
-  if (!ratings.length) return null;
-  return (ratings.reduce((a, r) => a + r.score, 0) / ratings.length).toFixed(1);
-}
-
-function StarDisplay({ score }: { score: number }) {
-  return (
-    <div className="flex gap-0.5">
-      {[1, 2, 3, 4, 5].map((s) => (
-        <span
-          key={s}
-          className={`material-symbols-outlined text-base select-none ${s <= score ? "text-yellow-400" : "text-muted-foreground/30"}`}
-          style={{ fontVariationSettings: `'FILL' ${s <= score ? 1 : 0}` }}
-        >
-          star
-        </span>
-      ))}
-    </div>
-  );
-}
+import { formatPrice } from "../lib/utils";
+import { useGeolocation } from "../hooks/use-geolocation";
+import type { Service } from "../types";
 
 export const Route = createFileRoute("/professionals")({
   component: ProfessionalsPage,
+  validateSearch: (search: Record<string, unknown>) => ({
+    workerId: typeof search.workerId === "string" ? search.workerId : undefined,
+    category: typeof search.category === "string" ? search.category : undefined,
+    q: typeof search.q === "string" ? search.q : undefined,
+  }),
 });
 
 // ── Types ────────────────────────────────────────────────────────────────────
-
-type Worker = {
-  id: string;
-  name: string;
-  bairro?: string | null;
-  cidade?: string | null;
-};
-
-type Service = {
-  id: string;
-  title: string;
-  description: string;
-  category: string;
-  bairro: string;
-  worker?: Worker;
-  createdAt?: string;
-};
 
 type Category = {
   id: string;
@@ -129,231 +73,57 @@ function categoryIcon(name: string) {
   return CATEGORY_ICONS[name.toLowerCase()] ?? "handyman";
 }
 
-// ── Modal de perfil do prestador ─────────────────────────────────────────────
+// ── Page ─────────────────────────────────────────────────────────────────────
 
-function WorkerModal({ svc, onClose }: { svc: Service; onClose: () => void }) {
-  const workerId = svc.worker?.id;
+function ProfessionalsPage() {
+  const { workerId, category: categoryParam, q: qParam } = Route.useSearch();
+  const navigate = useNavigate({ from: Route.fullPath });
 
-  useEffect(() => {
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", handleKey);
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", handleKey);
-      document.body.style.overflow = "";
-    };
-  }, [onClose]);
-
-  const profileQuery = useQuery<WorkerProfile>({
-    queryKey: ["worker-profile", workerId],
-    queryFn: () => apiRequest<WorkerProfile>(`/users/${workerId}`),
-    enabled: Boolean(workerId),
-  });
-
-  const ratingsQuery = useQuery<Rating[]>({
-    queryKey: ["ratings", workerId],
-    queryFn: () => apiRequest<Rating[]>(`/ratings/${workerId}`),
-    enabled: Boolean(workerId),
-  });
-
-  const servicesQuery = useQuery<Service[]>({
-    queryKey: ["worker-services-modal", workerId],
-    queryFn: () =>
-      apiRequest<Service[]>(
-        `/services?bairro=${encodeURIComponent(profileQuery.data?.bairro ?? "")}`,
-      ),
-    enabled: Boolean(profileQuery.data?.bairro),
-    select: (data) => data.filter((s) => s.worker?.id === workerId),
-  });
-
-  const profile = profileQuery.data;
-  const ratings = ratingsQuery.data ?? [];
-  const workerServices = servicesQuery.data ?? [];
-  const avg = averageScore(ratings);
-
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-foreground/40 backdrop-blur-sm"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      <div className="bg-card border border-outline-variant rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        {/* Barra de topo */}
-        <div className="sticky top-0 bg-card border-b border-outline-variant px-6 py-4 flex items-center justify-between z-10">
-          <p className="text-sm text-muted-foreground font-medium">Perfil do Prestador</p>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 rounded-full bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors"
-            aria-label="Fechar"
-          >
-            <span className="material-symbols-outlined text-foreground text-[18px]">close</span>
-          </button>
-        </div>
-
-        <div className="p-6 space-y-6">
-          {/* ── Cabeçalho do perfil ─── */}
-          {profileQuery.isLoading && (
-            <div className="animate-pulse flex gap-4 items-center">
-              <div className="w-16 h-16 rounded-full bg-muted shrink-0" />
-              <div className="flex-1 space-y-2">
-                <div className="h-5 bg-muted rounded w-1/2" />
-                <div className="h-4 bg-muted rounded w-1/3" />
-              </div>
-            </div>
-          )}
-
-          {profile && (
-            <div className="flex gap-4 items-start">
-              <div className="w-16 h-16 rounded-full bg-secondary/10 flex items-center justify-center shrink-0 border-2 border-secondary/20">
-                <span className="material-symbols-outlined text-secondary text-3xl">person</span>
-              </div>
-              <div className="flex-1">
-                <h2 className="text-xl font-bold text-primary">{profile.name}</h2>
-                <div className="flex flex-wrap gap-3 mt-1 text-xs text-muted-foreground">
-                  {(profile.bairro || profile.cidade) && (
-                    <span className="flex items-center gap-1">
-                      <span className="material-symbols-outlined text-[14px]">location_on</span>
-                      {[profile.bairro, profile.cidade].filter(Boolean).join(", ")}
-                    </span>
-                  )}
-                  {profile.createdAt && (
-                    <span className="flex items-center gap-1">
-                      <span className="material-symbols-outlined text-[14px]">calendar_month</span>
-                      Membro desde {formatDate(profile.createdAt)}
-                    </span>
-                  )}
-                </div>
-              </div>
-              {avg && (
-                <div className="bg-background border border-outline-variant rounded-xl px-4 py-3 text-center shrink-0">
-                  <p className="text-2xl font-bold text-primary">{avg}</p>
-                  <StarDisplay score={Math.round(parseFloat(avg))} />
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    {ratings.length} {ratings.length === 1 ? "avaliação" : "avaliações"}
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* ── Serviços ─── */}
-          {(workerServices.length > 0 || servicesQuery.isLoading) && (
-            <section className="bg-background border border-outline-variant rounded-xl overflow-hidden">
-              <div className="border-b border-outline-variant bg-muted/20 px-4 py-3">
-                <h3 className="font-bold text-primary text-sm">Serviços Oferecidos</h3>
-              </div>
-              {servicesQuery.isLoading ? (
-                <div className="p-4 animate-pulse space-y-2">
-                  {[1, 2].map((i) => (
-                    <div key={i} className="h-4 bg-muted rounded" />
-                  ))}
-                </div>
-              ) : (
-                <div className="divide-y divide-outline-variant">
-                  {workerServices.map((s) => (
-                    <div key={s.id} className="px-4 py-3 flex items-start justify-between gap-3">
-                      <div>
-                        <p className="font-semibold text-sm text-foreground">{s.title}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
-                          {s.description}
-                        </p>
-                      </div>
-                      <span className="shrink-0 bg-secondary/10 text-secondary text-xs font-bold px-2 py-0.5 rounded-full">
-                        {s.category}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </section>
-          )}
-
-          {/* ── Avaliações ─── */}
-          <section className="bg-background border border-outline-variant rounded-xl overflow-hidden">
-            <div className="border-b border-outline-variant bg-muted/20 px-4 py-3">
-              <h3 className="font-bold text-primary text-sm">
-                Avaliações
-                {ratings.length > 0 && (
-                  <span className="ml-1 font-normal text-muted-foreground">({ratings.length})</span>
-                )}
-              </h3>
-            </div>
-            {ratingsQuery.isLoading ? (
-              <div className="p-4 animate-pulse space-y-3">
-                {[1, 2].map((i) => (
-                  <div key={i} className="space-y-1">
-                    <div className="h-3 bg-muted rounded w-1/3" />
-                    <div className="h-3 bg-muted rounded w-2/3" />
-                  </div>
-                ))}
-              </div>
-            ) : ratings.length === 0 ? (
-              <div className="px-4 py-8 text-center text-muted-foreground text-sm">
-                <span className="material-symbols-outlined text-3xl block mb-2 opacity-40">
-                  rate_review
-                </span>
-                Nenhuma avaliação ainda.
-              </div>
-            ) : (
-              <div className="divide-y divide-outline-variant">
-                {ratings.slice(0, 5).map((r) => {
-                  const reviewer = r.reviewer ?? r.client;
-                  return (
-                    <div key={r.id} className="px-4 py-3">
-                      <div className="flex items-center gap-2 mb-1">
-                        <StarDisplay score={r.score} />
-                        <span className="text-xs text-muted-foreground">
-                          {reviewer?.name ?? "Usuário"}
-                        </span>
-                        {r.createdAt && (
-                          <span className="text-xs text-muted-foreground ml-auto">
-                            {formatDate(r.createdAt)}
-                          </span>
-                        )}
-                      </div>
-                      {r.comment && <p className="text-xs text-muted-foreground">{r.comment}</p>}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </section>
-
-          {/* ── Rodapé com link para a página completa ─── */}
-          {workerId && (
-            <Link
-              to="/workers/$workerId"
-              params={{ workerId }}
-              onClick={onClose}
-              className="w-full py-3 bg-secondary text-secondary-foreground font-bold rounded-xl hover:opacity-90 transition-all text-sm flex items-center justify-center gap-2 no-underline"
-            >
-              <span className="material-symbols-outlined text-[18px]">open_in_new</span>
-              Ver Perfil Completo
-            </Link>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-export default function ProfessionalsPage() {
-  const [inputValue, setInputValue] = useState("");
-  const [debouncedQ, setDebouncedQ] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("");
+  const [inputValue, setInputValue] = useState(qParam ?? "");
+  const [debouncedQ, setDebouncedQ] = useState(qParam ?? "");
+  const [selectedCategory, setSelectedCategory] = useState(categoryParam ?? "");
   const [bairroFilter, setBairroFilter] = useState("");
   const [cidadeFilter, setCidadeFilter] = useState("");
   const [cepFilter, setCepFilter] = useState("");
-  const [modalService, setModalService] = useState<Service | null>(null);
+  const [cepLoading, setCepLoading] = useState(false);
+  const [cepError, setCepError] = useState("");
 
-  // debounce de 400ms nos campos de texto livre
+  const { state: geoState, requestLocation } = useGeolocation();
+
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedQ(inputValue), 400);
     return () => clearTimeout(timer);
   }, [inputValue]);
+
+  useEffect(() => {
+    const digits = cepFilter.replace(/\D/g, "");
+    if (digits.length !== 8) {
+      setCepError("");
+      return;
+    }
+    setCepLoading(true);
+    setCepError("");
+    fetch(`https://viacep.com.br/ws/${digits}/json/`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.erro) {
+          setCepError("CEP não encontrado.");
+        } else {
+          if (data.bairro) setBairroFilter(data.bairro);
+          if (data.localidade) setCidadeFilter(data.localidade);
+        }
+      })
+      .catch(() => setCepError("Erro ao consultar o CEP."))
+      .finally(() => setCepLoading(false));
+  }, [cepFilter]);
+
+  useEffect(() => {
+    if (geoState.status === "success") {
+      if (geoState.data.bairro) setBairroFilter(geoState.data.bairro);
+      if (geoState.data.cidade) setCidadeFilter(geoState.data.cidade);
+      if (geoState.data.cep) setCepFilter(geoState.data.cep);
+    }
+  }, [geoState]);
 
   const categoriesQuery = useCategories();
   const servicesQuery = useServices({
@@ -367,6 +137,14 @@ export default function ProfessionalsPage() {
   const services = servicesQuery.data ?? [];
   const categories = categoriesQuery.data ?? [];
 
+  function openModal(id: string) {
+    navigate({ search: (prev) => ({ ...prev, workerId: id }) });
+  }
+
+  function closeModal() {
+    navigate({ search: (prev) => ({ ...prev, workerId: undefined }) });
+  }
+
   function clearFilters() {
     setInputValue("");
     setDebouncedQ("");
@@ -374,7 +152,12 @@ export default function ProfessionalsPage() {
     setBairroFilter("");
     setCidadeFilter("");
     setCepFilter("");
+    setCepError("");
   }
+
+  const hasActiveFilters = Boolean(
+    inputValue || selectedCategory || bairroFilter || cidadeFilter || cepFilter,
+  );
 
   return (
     <div className="bg-background text-foreground antialiased min-h-screen flex flex-col">
@@ -382,7 +165,6 @@ export default function ProfessionalsPage() {
 
       <main className="flex-1 py-12">
         <div className="max-w-300 mx-auto px-6">
-          {/* Cabeçalho da página */}
           <div className="mb-10">
             <h1 className="text-4xl font-bold text-primary mb-3">Serviços Disponíveis</h1>
             <p className="text-lg text-muted-foreground">
@@ -390,9 +172,8 @@ export default function ProfessionalsPage() {
             </p>
           </div>
 
-          {/* Filtros — espelham exatamente os query params aceitos pela API */}
+          {/* Filters */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-10">
-            {/* q — busca por título ou descrição */}
             <div className="md:col-span-2 lg:col-span-3 relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-muted-foreground select-none">
                 search
@@ -406,7 +187,6 @@ export default function ProfessionalsPage() {
               />
             </div>
 
-            {/* category */}
             <div>
               <select
                 value={selectedCategory}
@@ -422,7 +202,46 @@ export default function ProfessionalsPage() {
               </select>
             </div>
 
-            {/* bairro */}
+            {/* Geolocation button */}
+            <div className="md:col-span-1 lg:col-span-2">
+              <button
+                type="button"
+                onClick={requestLocation}
+                disabled={geoState.status === "loading"}
+                className="w-full flex items-center justify-center gap-2 px-4 py-3.5 bg-card border border-outline-variant rounded-xl text-sm font-semibold text-muted-foreground hover:border-secondary hover:text-secondary transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {geoState.status === "loading" ? (
+                  <>
+                    <span className="material-symbols-outlined text-[18px] animate-spin">
+                      progress_activity
+                    </span>
+                    Obtendo localização...
+                  </>
+                ) : geoState.status === "success" ? (
+                  <>
+                    <span className="material-symbols-outlined text-[18px] text-secondary">
+                      my_location
+                    </span>
+                    <span className="text-secondary">Localização aplicada</span>
+                    <span className="material-symbols-outlined text-[16px] text-secondary ml-auto">
+                      check_circle
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span className="material-symbols-outlined text-[18px]">near_me</span>
+                    Usar minha localização
+                  </>
+                )}
+              </button>
+              {geoState.status === "error" && (
+                <p className="mt-1.5 text-xs text-destructive flex items-center gap-1">
+                  <span className="material-symbols-outlined text-[14px]">error</span>
+                  {geoState.message}
+                </p>
+              )}
+            </div>
+
             <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-muted-foreground select-none text-[18px]">
                 location_on
@@ -436,7 +255,6 @@ export default function ProfessionalsPage() {
               />
             </div>
 
-            {/* cidade */}
             <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-muted-foreground select-none text-[18px]">
                 apartment
@@ -450,7 +268,6 @@ export default function ProfessionalsPage() {
               />
             </div>
 
-            {/* cep */}
             <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-muted-foreground select-none text-[18px]">
                 pin_drop
@@ -458,15 +275,34 @@ export default function ProfessionalsPage() {
               <input
                 type="text"
                 value={cepFilter}
-                onChange={(e) => setCepFilter(e.target.value)}
-                placeholder="CEP"
+                onChange={(e) => {
+                  const digits = e.target.value.replace(/\D/g, "").slice(0, 8);
+                  const masked = digits.length > 5 ? `${digits.slice(0, 5)}-${digits.slice(5)}` : digits;
+                  setCepFilter(masked);
+                }}
+                placeholder="CEP (00000-000)"
                 maxLength={9}
-                className="w-full pl-10 pr-4 py-3.5 bg-card border border-outline-variant rounded-xl outline-none focus:border-secondary focus:ring-1 focus:ring-secondary transition-all text-sm"
+                className="w-full pl-10 pr-10 py-3.5 bg-card border border-outline-variant rounded-xl outline-none focus:border-secondary focus:ring-1 focus:ring-secondary transition-all text-sm"
               />
+              {cepLoading && (
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-secondary text-[18px] animate-spin">
+                  progress_activity
+                </span>
+              )}
+              {!cepLoading && cepFilter.replace(/\D/g, "").length === 8 && !cepError && (
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-secondary text-[18px]">
+                  check_circle
+                </span>
+              )}
+              {cepError && (
+                <p className="mt-1 text-xs text-destructive flex items-center gap-1">
+                  <span className="material-symbols-outlined text-[14px]">error</span>
+                  {cepError}
+                </p>
+              )}
             </div>
 
-            {/* Botão limpar — aparece só se algum filtro estiver ativo */}
-            {(inputValue || selectedCategory || bairroFilter || cidadeFilter || cepFilter) && (
+            {hasActiveFilters && (
               <div className="flex items-center">
                 <button
                   onClick={clearFilters}
@@ -479,7 +315,7 @@ export default function ProfessionalsPage() {
             )}
           </div>
 
-          {/* Estados: carregando */}
+          {/* Loading skeleton */}
           {servicesQuery.isLoading && (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {Array.from({ length: 6 }).map((_, i) => (
@@ -487,7 +323,7 @@ export default function ProfessionalsPage() {
                   key={i}
                   className="bg-card rounded-xl border border-outline-variant overflow-hidden animate-pulse"
                 >
-                  <div className="h-48 bg-muted" />
+                  <div className="h-28 bg-muted" />
                   <div className="p-6 space-y-3">
                     <div className="h-5 bg-muted rounded w-3/4" />
                     <div className="h-4 bg-muted rounded w-1/3" />
@@ -499,7 +335,7 @@ export default function ProfessionalsPage() {
             </div>
           )}
 
-          {/* Estado: erro */}
+          {/* Error */}
           {servicesQuery.isError && (
             <div className="text-center py-20 bg-card rounded-2xl border border-outline-variant max-w-xl mx-auto px-6">
               <span className="material-symbols-outlined text-destructive text-5xl mb-4 block">
@@ -518,7 +354,7 @@ export default function ProfessionalsPage() {
             </div>
           )}
 
-          {/* Estado: sem resultados */}
+          {/* Empty state */}
           {!servicesQuery.isLoading && !servicesQuery.isError && services.length === 0 && (
             <div className="text-center py-20 bg-card rounded-2xl border border-outline-variant max-w-xl mx-auto px-6">
               <span className="material-symbols-outlined text-muted-foreground text-5xl mb-4 block">
@@ -528,7 +364,7 @@ export default function ProfessionalsPage() {
               <p className="text-muted-foreground text-base mb-6">
                 Não localizamos serviços com os filtros selecionados. Tente ampliar a busca.
               </p>
-              {(debouncedQ || selectedCategory || bairroFilter || cidadeFilter || cepFilter) && (
+              {hasActiveFilters && (
                 <button
                   onClick={clearFilters}
                   className="px-6 py-2.5 bg-secondary text-secondary-foreground rounded-lg font-semibold hover:opacity-90 transition-all text-sm shadow"
@@ -539,7 +375,7 @@ export default function ProfessionalsPage() {
             </div>
           )}
 
-          {/* Lista de serviços */}
+          {/* Service cards */}
           {!servicesQuery.isLoading && !servicesQuery.isError && services.length > 0 && (
             <>
               <p className="text-sm text-muted-foreground mb-6">
@@ -548,12 +384,12 @@ export default function ProfessionalsPage() {
               </p>
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {services.map((svc) => (
-                  <div
+                  <button
                     key={svc.id}
-                    onClick={() => setModalService(svc)}
-                    className="bg-card rounded-xl border border-outline-variant overflow-hidden hover:shadow-xl hover:border-secondary/30 transition-all flex flex-col cursor-pointer"
+                    type="button"
+                    onClick={() => svc.workerId && openModal(svc.workerId)}
+                    className="bg-card rounded-xl border border-outline-variant overflow-hidden hover:shadow-xl hover:border-secondary/30 transition-all flex flex-col text-left cursor-pointer w-full"
                   >
-                    {/* Cabeçalho colorido com ícone */}
                     <div className="h-28 bg-primary/5 dark:bg-primary/10 flex items-center justify-center border-b border-outline-variant relative">
                       <span className="material-symbols-outlined text-secondary text-5xl">
                         {categoryIcon(svc.category)}
@@ -568,20 +404,22 @@ export default function ProfessionalsPage() {
                         {svc.title}
                       </h3>
 
-                      {svc.worker?.name && (
+                      {svc.workerName && (
                         <p className="text-sm font-semibold text-secondary mb-2">
-                          {svc.worker.name}
+                          {svc.workerName}
                         </p>
                       )}
 
-                      <div className="flex items-center gap-1 text-muted-foreground text-xs mb-4">
-                        <span className="material-symbols-outlined text-[16px]">location_on</span>
-                        <span>{svc.bairro}</span>
-                        {svc.worker?.cidade && (
-                          <>
-                            <span className="mx-0.5">•</span>
-                            <span>{svc.worker.cidade}</span>
-                          </>
+                      <div className="flex items-center gap-3 mb-4 flex-wrap">
+                        <span className="flex items-center gap-1 text-muted-foreground text-xs">
+                          <span className="material-symbols-outlined text-[16px]">location_on</span>
+                          {svc.bairro}
+                        </span>
+                        {formatPrice(svc.price) && (
+                          <span className="flex items-center gap-1 text-xs font-bold text-secondary">
+                            <span className="material-symbols-outlined text-[15px]">payments</span>
+                            {formatPrice(svc.price)}
+                          </span>
                         )}
                       </div>
 
@@ -589,19 +427,12 @@ export default function ProfessionalsPage() {
                         {svc.description}
                       </p>
 
-                      {svc.worker?.id && (
-                        <Link
-                          to="/workers/$workerId"
-                          params={{ workerId: svc.worker.id }}
-                          onClick={(e) => e.stopPropagation()}
-                          className="mt-6 w-full py-3 bg-secondary text-secondary-foreground font-bold rounded-lg hover:opacity-90 transition-all text-sm flex items-center justify-center gap-2 no-underline"
-                        >
-                          <span className="material-symbols-outlined text-[16px]">open_in_new</span>
-                          Ver Perfil
-                        </Link>
-                      )}
+                      <div className="mt-6 w-full py-2.5 bg-secondary/10 text-secondary font-bold rounded-lg text-sm flex items-center justify-center gap-2">
+                        <span className="material-symbols-outlined text-[16px]">person</span>
+                        Ver Perfil
+                      </div>
                     </div>
-                  </div>
+                  </button>
                 ))}
               </div>
             </>
@@ -609,7 +440,9 @@ export default function ProfessionalsPage() {
         </div>
       </main>
 
-      {modalService && <WorkerModal svc={modalService} onClose={() => setModalService(null)} />}
+      {workerId && (
+        <WorkerDrawer workerId={workerId} open={Boolean(workerId)} onClose={closeModal} />
+      )}
 
       <Footer />
     </div>

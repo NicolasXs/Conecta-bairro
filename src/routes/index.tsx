@@ -1,51 +1,126 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+
 import Header from "../components/Header";
 import Footer from "../components/Footer";
+import { StarDisplay } from "../components/StarDisplay";
+import { apiRequest } from "../lib/api";
+import type { Service } from "../types";
 
 export const Route = createFileRoute("/")({
   component: LandingPage,
 });
 
-const categories = [
-  { icon: "construction", label: "Pedreiro" },
-  { icon: "cleaning_services", label: "Limpeza" },
-  { icon: "format_paint", label: "Pintura" },
-  { icon: "electrical_services", label: "Eletricista" },
-  { icon: "plumbing", label: "Encanador" },
-  { icon: "yard", label: "Jardinagem" },
-];
+type Category = {
+  id: string;
+  name: string;
+};
 
-const professionals = [
-  {
-    name: "Ricardo Silva",
-    specialty: "Especialista em Alvenaria",
-    rating: "4.9",
-    description: "Mais de 15 anos de experiência em reformas estruturais e acabamentos finos.",
-    img: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&h=400&fit=crop&crop=face",
-  },
-  {
-    name: "Ana Paula",
-    specialty: "Limpeza Especializada",
-    rating: "5.0",
-    description: "Especialista em higienização profunda e organização de ambientes residenciais.",
-    img: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=600&h=400&fit=crop&crop=face",
-  },
-  {
-    name: "Marcos Vinícius",
-    specialty: "Pintura e Texturização",
-    rating: "4.8",
-    description: "Transformo ambientes com técnicas modernas de pintura e aplicação de massa.",
-    img: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=600&h=400&fit=crop&crop=face",
-  },
-];
+const CATEGORY_ICONS: Record<string, string> = {
+  limpeza: "cleaning_services",
+  eletricista: "electrical_services",
+  encanador: "plumbing",
+  pintor: "format_paint",
+  carpinteiro: "carpenter",
+  pedreiro: "construction",
+  jardinagem: "yard",
+};
+
+function categoryIcon(name: string) {
+  return CATEGORY_ICONS[name.toLowerCase()] ?? "handyman";
+}
+
+function FeaturedServiceCard({ svc }: { svc: Service }) {
+  const avg = svc.avgScore != null ? svc.avgScore.toFixed(1) : null;
+  const count = svc.ratingCount ?? 0;
+
+  return (
+    <Link
+      to="/professionals"
+      search={{ workerId: svc.workerId, category: undefined, q: undefined }}
+      className="bg-card rounded-xl border border-outline-variant overflow-hidden hover:shadow-xl hover:border-secondary/30 transition-all flex flex-col no-underline group"
+    >
+      <div className="h-32 bg-primary/5 dark:bg-primary/10 flex items-center justify-center border-b border-outline-variant relative">
+        <span className="material-symbols-outlined text-secondary text-6xl">
+          {categoryIcon(svc.category)}
+        </span>
+        <span className="absolute top-3 right-3 bg-secondary text-secondary-foreground text-xs font-bold px-3 py-1 rounded-full">
+          {svc.category}
+        </span>
+      </div>
+
+      <div className="p-6 flex flex-col flex-1">
+        <h3 className="text-lg font-bold text-primary mb-1 line-clamp-2 group-hover:text-secondary transition-colors">
+          {svc.title}
+        </h3>
+
+        {svc.workerName && (
+          <p className="text-sm font-semibold text-secondary mb-2">{svc.workerName}</p>
+        )}
+
+        <div className="flex items-center gap-3 mb-3">
+          <span className="flex items-center gap-1 text-muted-foreground text-xs">
+            <span className="material-symbols-outlined text-[14px]">location_on</span>
+            {svc.bairro}
+          </span>
+          {avg && (
+            <span className="flex items-center gap-1 text-xs text-muted-foreground ml-auto shrink-0">
+              <StarDisplay score={Math.round(parseFloat(avg))} size="sm" />
+              <span className="font-semibold">{avg}</span>
+              <span>({count})</span>
+            </span>
+          )}
+        </div>
+
+        <p className="text-sm text-muted-foreground line-clamp-2 flex-1">{svc.description}</p>
+
+        <div className="mt-5 w-full py-2.5 bg-secondary/10 text-secondary font-bold rounded-lg text-sm flex items-center justify-center gap-2 group-hover:bg-secondary group-hover:text-secondary-foreground transition-all">
+          <span className="material-symbols-outlined text-[16px]">person</span>
+          Ver Profissional
+        </div>
+      </div>
+    </Link>
+  );
+}
 
 function LandingPage() {
+  const navigate = useNavigate();
+  const [searchQ, setSearchQ] = useState("");
+
+  const categoriesQuery = useQuery<Category[]>({
+    queryKey: ["categories"],
+    queryFn: () => apiRequest<Category[]>("/categories"),
+    staleTime: 1000 * 60 * 10,
+  });
+
+  const popularQuery = useQuery<Service[]>({
+    queryKey: ["home", "popular"],
+    queryFn: () => apiRequest<Service[]>("/home/popular"),
+    staleTime: 1000 * 60 * 5,
+  });
+
+  const categories = categoriesQuery.data ?? [];
+  const featuredServices = (popularQuery.data ?? []).slice(0, 3);
+
+  function handleSearch(e: React.FormEvent) {
+    e.preventDefault();
+    void navigate({
+      to: "/professionals",
+      search: {
+        q: searchQ.trim() || undefined,
+        workerId: undefined,
+        category: undefined,
+      },
+    });
+  }
+
   return (
     <div className="bg-background text-foreground antialiased min-h-screen flex flex-col">
       <Header />
 
       <main className="flex-1">
-        {/* Hero Section */}
+        {/* Hero */}
         <section className="relative bg-muted/30 dark:bg-muted/10 border-b border-outline-variant py-20 md:py-32 overflow-hidden">
           <div className="absolute inset-0 opacity-10 pointer-events-none">
             <div className="absolute top-0 right-0 w-150 h-150 bg-primary-container rounded-full blur-[120px]" />
@@ -57,57 +132,69 @@ function LandingPage() {
                 Encontre os melhores profissionais para sua casa
               </h1>
               <p className="text-lg text-muted-foreground mb-8">
-                Pedreiros, faxineiras, pintores e muito mais, verificados e perto de você. Confiança
-                e qualidade local.
+                Pedreiros, faxineiras, pintores e muito mais — verificados e perto de você.
+                Confiança e qualidade local.
               </p>
 
-              {/* Search Bar */}
-              <div className="bg-card p-2 rounded-xl shadow-[0px_4px_12px_rgba(0,32,69,0.08)] flex flex-col md:flex-row gap-2 border border-outline-variant">
+              <form
+                onSubmit={handleSearch}
+                className="bg-card p-2 rounded-xl shadow-[0px_4px_12px_rgba(0,32,69,0.08)] flex flex-col md:flex-row gap-2 border border-outline-variant"
+              >
                 <div className="flex-1 flex items-center px-4 md:border-r border-outline-variant">
                   <span className="material-symbols-outlined text-primary mr-2">search</span>
                   <input
+                    value={searchQ}
+                    onChange={(e) => setSearchQ(e.target.value)}
                     className="w-full border-none outline-none bg-transparent text-base py-4 text-foreground placeholder:text-muted-foreground"
                     placeholder="Qual serviço você precisa?"
                     type="text"
                   />
                 </div>
-                <div className="flex-1 flex items-center px-4">
-                  <span className="material-symbols-outlined text-primary mr-2">location_on</span>
-                  <input
-                    className="w-full border-none outline-none bg-transparent text-base py-4 text-foreground placeholder:text-muted-foreground"
-                    placeholder="Localização"
-                    type="text"
-                  />
-                </div>
-                <button className="bg-secondary text-secondary-foreground px-8 py-4 rounded-lg text-sm font-semibold hover:opacity-90 transition-all flex items-center justify-center">
+                <button
+                  type="submit"
+                  className="bg-secondary text-secondary-foreground px-8 py-4 rounded-lg text-sm font-semibold hover:opacity-90 transition-all flex items-center justify-center"
+                >
                   Buscar Profissional
                 </button>
-              </div>
+              </form>
             </div>
           </div>
         </section>
 
-        {/* Categories Section */}
+        {/* Categories */}
         <section className="py-20 max-w-300 mx-auto px-6">
-          <h2 className="text-3xl font-bold text-primary mb-8">Categorias Populares</h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            {categories.map((cat) => (
-              <div
-                key={cat.label}
-                className="group bg-card p-6 rounded-xl border border-outline-variant hover:border-secondary hover:shadow-lg transition-all cursor-pointer text-center"
-              >
-                <div className="w-16 h-16 bg-muted dark:bg-muted/50 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm group-hover:bg-secondary/10 transition-colors">
-                  <span className="material-symbols-outlined text-secondary text-3xl">
-                    {cat.icon}
-                  </span>
-                </div>
-                <span className="text-base font-semibold block text-foreground">{cat.label}</span>
-              </div>
-            ))}
-          </div>
+          <h2 className="text-3xl font-bold text-primary mb-8">Categorias Disponíveis</h2>
+
+          {categoriesQuery.isLoading && (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="animate-pulse bg-card rounded-xl border border-outline-variant p-6 h-32" />
+              ))}
+            </div>
+          )}
+
+          {!categoriesQuery.isLoading && categories.length > 0 && (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+              {categories.map((cat) => (
+                <Link
+                  key={cat.id}
+                  to="/professionals"
+                  search={{ category: cat.name, workerId: undefined, q: undefined }}
+                  className="group bg-card p-6 rounded-xl border border-outline-variant hover:border-secondary hover:shadow-lg transition-all text-center no-underline"
+                >
+                  <div className="w-16 h-16 bg-muted dark:bg-muted/50 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm group-hover:bg-secondary/10 transition-colors">
+                    <span className="material-symbols-outlined text-secondary text-3xl">
+                      {categoryIcon(cat.name)}
+                    </span>
+                  </div>
+                  <span className="text-base font-semibold block text-foreground">{cat.name}</span>
+                </Link>
+              ))}
+            </div>
+          )}
         </section>
 
-        {/* How it Works */}
+        {/* How it works */}
         <section
           id="how-it-works"
           className="scroll-mt-24 bg-card border-y border-outline-variant py-20"
@@ -123,23 +210,26 @@ function LandingPage() {
               {[
                 {
                   step: "1",
+                  icon: "search",
                   title: "Busque o serviço",
-                  desc: "Selecione a categoria e veja os profissionais disponíveis na sua região.",
+                  desc: "Selecione a categoria ou busque pelo nome e veja os profissionais disponíveis na sua região.",
                 },
                 {
                   step: "2",
-                  title: "Compare profissionais",
-                  desc: "Veja avaliações reais, fotos de trabalhos anteriores e peça orçamentos.",
+                  icon: "star",
+                  title: "Compare e avalie",
+                  desc: "Veja avaliações reais de outros usuários, compare profissionais e escolha o melhor para você.",
                 },
                 {
                   step: "3",
-                  title: "Contrate com segurança",
-                  desc: "Pagamento facilitado e garantia de um serviço bem executado por experts.",
+                  icon: "handshake",
+                  title: "Conecte-se",
+                  desc: "Entre em contato com o profissional e contrate com segurança diretamente pelo Conecta Bairro.",
                 },
               ].map((item) => (
                 <div key={item.step} className="text-center">
-                  <div className="w-12 h-12 bg-secondary/10 text-secondary rounded-full flex items-center justify-center font-bold text-xl mx-auto mb-4">
-                    {item.step}
+                  <div className="w-14 h-14 bg-secondary/10 text-secondary rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
+                    <span className="material-symbols-outlined text-2xl">{item.icon}</span>
                   </div>
                   <h3 className="text-xl font-semibold text-primary mb-2">{item.title}</h3>
                   <p className="text-base text-muted-foreground">{item.desc}</p>
@@ -149,65 +239,66 @@ function LandingPage() {
           </div>
         </section>
 
-        {/* Verified Professionals */}
+        {/* Featured services */}
         <section className="py-20 max-w-300 mx-auto px-6">
           <div className="flex justify-between items-end mb-8">
             <div>
-              <h2 className="text-3xl font-bold text-primary">Profissionais Verificados</h2>
+              <h2 className="text-3xl font-bold text-primary">Serviços em Destaque</h2>
               <p className="text-lg text-muted-foreground">
-                Os especialistas mais bem avaliados desta semana.
+                Profissionais reais prontos para te atender.
               </p>
             </div>
             <Link
               to="/professionals"
-              className="text-secondary font-bold flex items-center hover:underline no-underline"
+              search={{ workerId: undefined, category: undefined, q: undefined }}
+              className="text-secondary font-bold flex items-center hover:underline no-underline whitespace-nowrap"
             >
-              Ver todos <span className="material-symbols-outlined ml-1">arrow_forward</span>
+              Ver todos
+              <span className="material-symbols-outlined ml-1">arrow_forward</span>
             </Link>
           </div>
-          <div className="grid md:grid-cols-3 gap-6">
-            {professionals.map((pro) => (
-              <div
-                key={pro.name}
-                className="bg-card rounded-xl border border-outline-variant overflow-hidden hover:shadow-xl transition-all"
-              >
-                <img src={pro.img} alt={pro.name} className="w-full h-48 object-cover" />
-                <div className="p-6">
-                  <div className="flex justify-between items-center mb-2">
-                    <h3 className="text-xl font-semibold text-primary">{pro.name}</h3>
-                    <div className="flex items-center bg-secondary/10 px-2.5 py-1 rounded">
-                      <span className="material-symbols-outlined text-secondary text-sm mr-1">
-                        star
-                      </span>
-                      <span className="text-on-secondary-container font-bold text-sm">
-                        {pro.rating}
-                      </span>
-                    </div>
+
+          {popularQuery.isLoading && (
+            <div className="grid md:grid-cols-3 gap-6">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="bg-card rounded-xl border border-outline-variant overflow-hidden animate-pulse">
+                  <div className="h-32 bg-muted" />
+                  <div className="p-6 space-y-3">
+                    <div className="h-5 bg-muted rounded w-3/4" />
+                    <div className="h-4 bg-muted rounded w-1/3" />
+                    <div className="h-4 bg-muted rounded w-full" />
                   </div>
-                  <p className="text-secondary font-bold text-sm mb-4">{pro.specialty}</p>
-                  <p className="text-base text-muted-foreground mb-6 line-clamp-2">
-                    {pro.description}
-                  </p>
-                  <Link
-                    to="/professionals"
-                    className="w-full py-3 border border-primary text-primary font-bold rounded-lg hover:bg-primary hover:text-primary-foreground transition-all flex items-center justify-center no-underline"
-                  >
-                    Ver Perfil
-                  </Link>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
+
+          {!popularQuery.isLoading && featuredServices.length === 0 && (
+            <div className="text-center py-16 bg-card rounded-2xl border border-outline-variant">
+              <span className="material-symbols-outlined text-4xl text-muted-foreground block mb-3 opacity-40">
+                handyman
+              </span>
+              <p className="text-muted-foreground">Nenhum serviço disponível no momento.</p>
+            </div>
+          )}
+
+          {featuredServices.length > 0 && (
+            <div className="grid md:grid-cols-3 gap-6">
+              {featuredServices.map((svc) => (
+                <FeaturedServiceCard key={svc.id} svc={svc} />
+              ))}
+            </div>
+          )}
         </section>
 
-        {/* Professional CTA */}
+        {/* CTA */}
         <section id="for-pros" className="scroll-mt-24 py-20 max-w-300 mx-auto px-6">
           <div className="bg-card border border-outline-variant rounded-2xl p-8 md:p-12 flex flex-col md:flex-row items-center justify-between gap-8 shadow-sm">
             <div className="max-w-2xl text-center md:text-left">
               <h2 className="text-3xl font-bold text-primary mb-4">Você é um profissional?</h2>
               <p className="text-lg text-muted-foreground">
                 Cadastre-se agora e aumente seus clientes. Tenha visibilidade na sua região e
-                gerencie seus pedidos em um só lugar.
+                gerencie seus serviços em um só lugar.
               </p>
             </div>
             <Link

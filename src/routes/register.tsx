@@ -1,4 +1,4 @@
-import { createFileRoute, redirect, useRouter } from '@tanstack/react-router'
+import { createFileRoute, Link, redirect, useRouter } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -184,7 +184,7 @@ function RegisterPage() {
         cidade: values.cidade,
         password: values.password,
       })
-      router.navigate({ to: '/' })
+      router.navigate({ to: '/dashboard' })
     } catch (err: unknown) {
       const error = err as Error & { status?: number }
       if (error.status === 409) {
@@ -208,13 +208,13 @@ function RegisterPage() {
   return (
     <div className="relative min-h-screen flex items-center justify-center bg-background px-4 py-16">
       <AnimatedGridPattern
-        className="absolute inset-0 -z-10 opacity-30 [mask-image:radial-gradient(600px_circle_at_center,white,transparent)]"
+        className="absolute inset-0 -z-10 opacity-30 mask-[radial-gradient(600px_circle_at_center,white,transparent)]"
         numSquares={30}
         maxOpacity={0.1}
         duration={3}
       />
 
-      <Card className="w-full max-w-[400px] shadow-lg rounded-xl bg-card">
+      <Card className="w-full max-w-100 shadow-lg rounded-xl bg-card">
         <CardHeader className="pb-2 pt-8 px-8">
           <div className="text-center mb-6">
             <p className="text-[30px] font-semibold leading-[1.1] text-foreground">
@@ -426,12 +426,12 @@ function RegisterPage() {
           <Separator />
           <p className="text-sm text-muted-foreground text-center">
             Já tem uma conta?{' '}
-            <a
-              href="/login"
+            <Link
+              to="/login"
               className="text-primary underline-offset-4 hover:underline font-medium"
             >
               Entrar
-            </a>
+            </Link>
           </p>
         </CardFooter>
       </Card>
