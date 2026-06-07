@@ -1,4 +1,4 @@
-import { createFileRoute, Link, redirect, useRouter } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect, useNavigate, useRouter } from "@tanstack/react-router";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -10,11 +10,9 @@ import { isAuthenticated } from "../lib/auth";
 import { ApiError } from "../lib/api";
 import { AnimatedGridPattern } from "../components/magic-ui/animated-grid-pattern";
 import { ShimmerButton } from "../components/magic-ui/shimmer-button";
-import { Card, CardContent, CardFooter, CardHeader } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { Button } from "../components/ui/button";
 import { Alert, AlertDescription } from "../components/ui/alert";
-import { Separator } from "../components/ui/separator";
 import {
   Form,
   FormControl,
@@ -43,8 +41,15 @@ const loginSchema = z.object({
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
+const FEATURES = [
+  { icon: "handyman", label: "Profissionais de todos os serviços" },
+  { icon: "star", label: "Avaliações reais de clientes" },
+  { icon: "location_on", label: "Conectado ao seu bairro" },
+];
+
 function LoginPage() {
   const router = useRouter();
+  const navigate = useNavigate();
   const loginMutation = useLoginMutation();
   const [serverError, setServerError] = useState<string | null>(null);
 
@@ -73,28 +78,67 @@ function LoginPage() {
   const isLoading = loginMutation.isPending;
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center bg-background px-4 py-16">
-      <AnimatedGridPattern
-        className="absolute inset-0 -z-10 opacity-30 mask-[radial-gradient(600px_circle_at_center,white,transparent)]"
-        numSquares={30}
-        maxOpacity={0.1}
-        duration={3}
-      />
+    <div className="min-h-screen flex">
+      {/* ── Brand panel ─────────────────────────────────────────────────────── */}
+      <div className="hidden lg:flex lg:w-[45%] flex-col justify-between bg-primary dark:bg-[oklch(0.16_0.025_253)] px-12 py-10">
+        <Link to="/" className="no-underline">
+          <span className="text-2xl font-bold text-white tracking-tight">
+            Conecta Bairro
+          </span>
+        </Link>
 
-      <Card className="w-full max-w-100 shadow-lg rounded-xl bg-card">
-        <CardHeader className="pb-2 pt-8 px-8">
-          <div className="text-center mb-6">
-            <p className="text-[30px] font-semibold leading-[1.1] text-foreground">
-              Conecta Bairro 🏘️
-            </p>
-            <p className="text-sm text-muted-foreground mt-1">Serviços perto de você</p>
+        <div>
+          <h2 className="text-4xl font-bold text-white leading-tight mb-4">
+            Serviços de confiança perto de você
+          </h2>
+          <p className="text-white/70 text-base mb-10">
+            Encontre profissionais do seu bairro e contrate com segurança.
+          </p>
+          <ul className="space-y-4">
+            {FEATURES.map(({ icon, label }) => (
+              <li key={icon} className="flex items-center gap-3">
+                <span className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center shrink-0">
+                  <span className="material-symbols-outlined text-secondary text-[20px]">
+                    {icon}
+                  </span>
+                </span>
+                <span className="text-white/90 text-sm font-medium">{label}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <p className="text-white/40 text-xs">
+          © {new Date().getFullYear()} Conecta Bairro
+        </p>
+      </div>
+
+      {/* ── Form panel ──────────────────────────────────────────────────────── */}
+      <div className="relative flex flex-1 items-center justify-center bg-background px-6 py-12">
+        <AnimatedGridPattern
+          className="absolute inset-0 -z-10 opacity-30 mask-[radial-gradient(600px_circle_at_center,white,transparent)]"
+          numSquares={30}
+          maxOpacity={0.1}
+          duration={3}
+        />
+
+        <div className="w-full max-w-sm">
+          {/* Mobile logo */}
+          <div className="lg:hidden text-center mb-8">
+            <Link to="/" className="no-underline">
+              <span className="text-2xl font-bold text-primary">Conecta Bairro</span>
+            </Link>
           </div>
-          <h1 className="text-2xl font-semibold text-foreground text-center">Entrar</h1>
-        </CardHeader>
 
-        <CardContent className="px-8 pb-4">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-foreground">Entrar</h1>
+            <p className="text-muted-foreground text-sm mt-1">
+              Bem-vindo de volta! Acesse sua conta.
+            </p>
+          </div>
+
           {serverError && (
-            <Alert variant="destructive" className="mb-4">
+            <Alert variant="destructive" className="mb-6">
               <AlertDescription>{serverError}</AlertDescription>
             </Alert>
           )}
@@ -103,7 +147,7 @@ function LoginPage() {
             <form
               onSubmit={form.handleSubmit(onSubmit)}
               aria-busy={isLoading}
-              className="space-y-6"
+              className="space-y-5"
             >
               <FormField
                 control={form.control}
@@ -131,7 +175,9 @@ function LoginPage() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Senha</FormLabel>
+                    <div className="flex items-center justify-between">
+                      <FormLabel>Senha</FormLabel>
+                    </div>
                     <FormControl>
                       <Input
                         type="password"
@@ -147,21 +193,9 @@ function LoginPage() {
                 )}
               />
 
-              <div className="flex justify-end -mt-2">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="text-primary h-auto p-0 text-sm"
-                  disabled
-                >
-                  Esqueci minha senha
-                </Button>
-              </div>
-
               <ShimmerButton
                 type="submit"
-                className="w-full h-11 text-sm font-medium"
+                className="w-full h-11 text-sm font-semibold"
                 disabled={isLoading}
               >
                 {isLoading ? (
@@ -175,21 +209,29 @@ function LoginPage() {
               </ShimmerButton>
             </form>
           </Form>
-        </CardContent>
 
-        <CardFooter className="flex flex-col gap-3 px-8 pb-8">
-          <Separator />
-          <p className="text-sm text-muted-foreground text-center">
+          <p className="text-sm text-muted-foreground text-center mt-6">
             Não tem uma conta?{" "}
             <Link
               to="/register"
-              className="text-primary underline-offset-4 hover:underline font-medium"
+              className="text-primary font-semibold underline-offset-4 hover:underline"
             >
-              Criar conta
+              Criar conta grátis
             </Link>
           </p>
-        </CardFooter>
-      </Card>
+          <div className="flex justify-center m-2 cursor-pointer">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="cursor-pointer text-muted-foreground h-auto p-0 text-xs hover:text-primary"
+              onClick={() => navigate({ to: "/esqueci-senha" })}
+            >
+              Esqueci minha senha
+            </Button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
