@@ -64,8 +64,16 @@ export function WorkerDrawer({
 
             {profile && (
               <div className="flex gap-4 items-start pt-2">
-                <div className="w-14 h-14 rounded-full bg-secondary/10 flex items-center justify-center shrink-0 border-2 border-secondary/20">
-                  <span className="material-symbols-outlined text-secondary text-3xl">person</span>
+                <div className="w-14 h-14 rounded-full bg-secondary/10 flex items-center justify-center shrink-0 border-2 border-secondary/20 overflow-hidden">
+                  {profile.avatarUrl ? (
+                    <img
+                      src={profile.avatarUrl}
+                      alt={profile.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span className="material-symbols-outlined text-secondary text-3xl">person</span>
+                  )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <h2 className="text-lg font-bold text-primary truncate">{profile.name}</h2>

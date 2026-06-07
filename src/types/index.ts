@@ -29,6 +29,8 @@ export type WorkerProfile = {
   name: string;
   email?: string;
   role?: string;
+  avatarUrl?: string | null;
+  coverUrl?: string | null;
   bairro?: string | null;
   cidade?: string | null;
   cep?: string | null;
