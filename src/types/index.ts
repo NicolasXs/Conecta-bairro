@@ -48,6 +48,7 @@ export type Rating = {
   workerId?: string;
   clientId?: string;
   clientName?: string | null;
+  clientAvatarUrl?: string | null;
   score: number;
   comment?: string | null;
   createdAt?: string;

@@ -47,9 +47,9 @@ export function WorkerDrawer({
 
   return (
     <Drawer open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-      <DrawerContent className="max-h-[85vh]">
-        <div className="overflow-y-auto flex flex-col gap-0 px-1">
-          <DrawerHeader className="pb-2">
+      <DrawerContent className="flex flex-col">
+        <div className="flex-1 min-h-0 overflow-y-auto px-1">
+          <DrawerHeader className="pb-2 text-left!">
             <DrawerTitle className="sr-only">Perfil do prestador</DrawerTitle>
 
             {profileQuery.isLoading && (
@@ -191,10 +191,18 @@ export function WorkerDrawer({
                   {ratings.slice(0, 3).map((r) => (
                     <div key={r.id} className="px-4 py-3">
                       <div className="flex items-center gap-2 mb-0.5">
-                        <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center shrink-0">
-                          <span className="material-symbols-outlined text-muted-foreground text-xs">
-                            person
-                          </span>
+                        <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center shrink-0 overflow-hidden">
+                          {r.clientAvatarUrl ? (
+                            <img
+                              src={r.clientAvatarUrl}
+                              alt={r.clientName ?? "Usuário"}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <span className="material-symbols-outlined text-muted-foreground text-xs">
+                              person
+                            </span>
+                          )}
                         </div>
                         <span className="text-xs font-semibold text-foreground">
                           {r.clientName ?? "Usuário"}

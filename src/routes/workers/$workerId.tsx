@@ -366,10 +366,18 @@ function PublicProfilePage() {
                             <div key={r.id} className="px-6 py-5">
                               <div className="flex items-center justify-between mb-2">
                                 <div className="flex items-center gap-2">
-                                  <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
-                                    <span className="material-symbols-outlined text-muted-foreground text-base">
-                                      person
-                                    </span>
+                                  <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center overflow-hidden shrink-0">
+                                    {r.clientAvatarUrl ? (
+                                      <img
+                                        src={r.clientAvatarUrl}
+                                        alt={r.clientName ?? "Usuário"}
+                                        className="w-full h-full object-cover"
+                                      />
+                                    ) : (
+                                      <span className="material-symbols-outlined text-muted-foreground text-base">
+                                        person
+                                      </span>
+                                    )}
                                   </div>
                                   <span className="text-sm font-semibold text-foreground">
                                     {r.clientName ?? "Usuário"}

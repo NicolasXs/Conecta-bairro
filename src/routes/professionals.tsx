@@ -87,6 +87,8 @@ function ProfessionalsPage() {
   const [cepFilter, setCepFilter] = useState("");
   const [cepLoading, setCepLoading] = useState(false);
   const [cepError, setCepError] = useState("");
+  const [minPrice, setMinPrice] = useState("");
+  const [maxPrice, setMaxPrice] = useState("");
 
   const { state: geoState, requestLocation } = useGeolocation();
 
@@ -134,7 +136,12 @@ function ProfessionalsPage() {
     cep: cepFilter,
   });
 
-  const services = servicesQuery.data ?? [];
+  const allServices = servicesQuery.data ?? [];
+  const services = allServices.filter((svc) => {
+    if (minPrice !== "" && (svc.price == null || svc.price < Number(minPrice))) return false;
+    if (maxPrice !== "" && (svc.price == null || svc.price > Number(maxPrice))) return false;
+    return true;
+  });
   const categories = categoriesQuery.data ?? [];
 
   function openModal(id: string) {
@@ -153,10 +160,12 @@ function ProfessionalsPage() {
     setCidadeFilter("");
     setCepFilter("");
     setCepError("");
+    setMinPrice("");
+    setMaxPrice("");
   }
 
   const hasActiveFilters = Boolean(
-    inputValue || selectedCategory || bairroFilter || cidadeFilter || cepFilter,
+    inputValue || selectedCategory || bairroFilter || cidadeFilter || cepFilter || minPrice || maxPrice,
   );
 
   return (
@@ -200,6 +209,34 @@ function ProfessionalsPage() {
                   </option>
                 ))}
               </select>
+            </div>
+
+            <div className="relative">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-muted-foreground select-none text-[18px]">
+                payments
+              </span>
+              <input
+                type="number"
+                min={0}
+                value={minPrice}
+                onChange={(e) => setMinPrice(e.target.value)}
+                placeholder="Preço mínimo (R$)"
+                className="w-full pl-10 pr-4 py-3.5 bg-card border border-outline-variant rounded-xl outline-none focus:border-secondary focus:ring-1 focus:ring-secondary transition-all text-sm"
+              />
+            </div>
+
+            <div className="relative">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-muted-foreground select-none text-[18px]">
+                payments
+              </span>
+              <input
+                type="number"
+                min={0}
+                value={maxPrice}
+                onChange={(e) => setMaxPrice(e.target.value)}
+                placeholder="Preço máximo (R$)"
+                className="w-full pl-10 pr-4 py-3.5 bg-card border border-outline-variant rounded-xl outline-none focus:border-secondary focus:ring-1 focus:ring-secondary transition-all text-sm"
+              />
             </div>
 
             {/* Geolocation button */}
