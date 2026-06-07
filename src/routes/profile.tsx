@@ -1,12 +1,12 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 
-import Header from "../components/Header";
-import Footer from "../components/Footer";
+import { PageLayout } from "../components/PageLayout";
 import { apiRequest } from "../lib/api";
 import { averageScore } from "../lib/utils";
-import { getAuthenticatedUserId, isAuthenticated } from "../lib/auth";
+import { getAuthenticatedUserId } from "../lib/auth";
+import { requireAuth } from "../lib/guards";
 import type { UserProfile, Rating, Service, Category, ContactLink } from "../types";
 
 import { ProfileHeroCard } from "../components/profile/ProfileHeroCard";
@@ -19,11 +19,7 @@ import { AccountSummary } from "../components/profile/AccountSummary";
 import { ExternalLinkModal } from "../components/profile/ExternalLinkModal";
 
 export const Route = createFileRoute("/profile")({
-  beforeLoad: async () => {
-    if (typeof window !== "undefined" && !isAuthenticated()) {
-      throw redirect({ to: "/login" });
-    }
-  },
+  beforeLoad: requireAuth,
   component: ProfilePage,
 });
 
@@ -63,65 +59,60 @@ function ProfilePage() {
   const profile = profileQuery.data;
 
   return (
-    <div className="bg-background text-foreground antialiased min-h-screen flex flex-col">
-      <Header />
+    <PageLayout mainClassName="py-12">
+      <div className="max-w-300 mx-auto px-6">
+        {profileQuery.isLoading && <ProfileLoadingSkeleton />}
 
-      <main className="flex-1 py-12">
-        <div className="max-w-300 mx-auto px-6">
-          {profileQuery.isLoading && <ProfileLoadingSkeleton />}
+        {profileQuery.isError && (
+          <div className="bg-card border border-outline-variant rounded-xl p-6">
+            <p className="text-destructive font-medium mb-4">Erro ao carregar seu perfil.</p>
+            <button
+              type="button"
+              onClick={() => profileQuery.refetch()}
+              className="px-4 py-2 rounded-lg bg-secondary text-secondary-foreground font-semibold"
+            >
+              Tentar novamente
+            </button>
+          </div>
+        )}
 
-          {profileQuery.isError && (
-            <div className="bg-card border border-outline-variant rounded-xl p-6">
-              <p className="text-destructive font-medium mb-4">Erro ao carregar seu perfil.</p>
-              <button
-                onClick={() => profileQuery.refetch()}
-                className="px-4 py-2 rounded-lg bg-secondary text-secondary-foreground font-semibold"
-              >
-                Tentar novamente
-              </button>
-            </div>
-          )}
-
-          {profile && (
-            <div className="space-y-8">
-              <ProfileHeroCard
-                profile={profile}
-                ratings={ratings}
-                avg={avg}
-                editOpen={editOpen}
-                onToggleEdit={() => setEditOpen((v) => !v)}
-              />
-              <ProfileStats
-                servicesCount={myServices.length}
-                ratingsCount={ratings.length}
-                avg={avg}
-                cep={profile.cep}
-              />
-              <ContactLinksSection
-                contactLinks={profile.contactLinks ?? []}
-                onLinkClick={setPendingLink}
-              />
-              {editOpen && <ProfileEditForm profile={profile} userId={userId!} />}
-              <ServicesSection
-                services={myServices}
-                servicesLoading={servicesQuery.isLoading}
-                categories={categoriesQuery.data ?? []}
-                userId={userId!}
-                defaultBairro={profile.bairro ?? ""}
-              />
-              <RatingsSection ratings={ratings} isLoading={ratingsQuery.isLoading} />
-              <AccountSummary profile={profile} />
-            </div>
-          )}
-        </div>
-      </main>
-
-      <Footer />
+        {profile && (
+          <div className="space-y-8">
+            <ProfileHeroCard
+              profile={profile}
+              ratings={ratings}
+              avg={avg}
+              editOpen={editOpen}
+              onToggleEdit={() => setEditOpen((v) => !v)}
+            />
+            <ProfileStats
+              servicesCount={myServices.length}
+              ratingsCount={ratings.length}
+              avg={avg}
+              cep={profile.cep}
+            />
+            <ContactLinksSection
+              contactLinks={profile.contactLinks ?? []}
+              onLinkClick={setPendingLink}
+            />
+            {editOpen && <ProfileEditForm profile={profile} userId={userId!} />}
+            <ServicesSection
+              services={myServices}
+              servicesLoading={servicesQuery.isLoading}
+              categories={categoriesQuery.data ?? []}
+              userId={userId!}
+              defaultBairro={profile.bairro ?? ""}
+            />
+            <RatingsSection ratings={ratings} isLoading={ratingsQuery.isLoading} />
+            <AccountSummary profile={profile} />
+          </div>
+        )}
+      </div>
 
       {pendingLink && (
         <ExternalLinkModal link={pendingLink} onClose={() => setPendingLink(null)} />
       )}
-    </div>
+    </PageLayout>
   );
 }
 

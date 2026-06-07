@@ -1,4 +1,4 @@
-import { createFileRoute, Link, redirect, useNavigate, useRouter } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect, useRouter } from "@tanstack/react-router";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -49,7 +49,6 @@ const FEATURES = [
 
 function LoginPage() {
   const router = useRouter();
-  const navigate = useNavigate();
   const loginMutation = useLoginMutation();
   const [serverError, setServerError] = useState<string | null>(null);
 
@@ -232,7 +231,7 @@ function LoginPage() {
               variant="ghost"
               size="sm"
               className="cursor-pointer text-muted-foreground h-auto p-0 text-xs hover:text-primary"
-              onClick={() => navigate({ to: "/esqueci-senha" })}
+              onClick={() => router.navigate({ to: "/esqueci-senha" })}
             >
               Esqueci minha senha
             </Button>

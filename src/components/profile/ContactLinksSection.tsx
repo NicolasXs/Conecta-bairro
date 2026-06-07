@@ -1,13 +1,10 @@
 import type { ContactLink } from "../../types";
+import { looksLikeUrl } from "../../lib/utils";
 
 type Props = {
   contactLinks: ContactLink[];
   onLinkClick: (link: ContactLink) => void;
 };
-
-function looksLikeUrl(value: string) {
-  return /^https?:\/\//i.test(value) || /^www\./i.test(value);
-}
 
 export function ContactLinksSection({ contactLinks, onLinkClick }: Props) {
   if (contactLinks.length === 0) return null;

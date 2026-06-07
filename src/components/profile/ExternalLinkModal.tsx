@@ -1,19 +1,10 @@
 import type { ContactLink } from "../../types";
+import { looksLikeUrl, resolveUrl } from "../../lib/utils";
 
 type Props = {
   link: ContactLink;
   onClose: () => void;
 };
-
-function looksLikeUrl(value: string) {
-  return /^https?:\/\//i.test(value) || /^www\./i.test(value);
-}
-
-function resolveUrl(value: string): string | null {
-  if (/^https?:\/\//i.test(value)) return value;
-  if (/^www\./i.test(value)) return `https://${value}`;
-  return null;
-}
 
 export function ExternalLinkModal({ link, onClose }: Props) {
   const url = resolveUrl(link.value);

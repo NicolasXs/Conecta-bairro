@@ -55,7 +55,7 @@ export default function Footer() {
             <Link
               key={category}
               to="/professionals"
-              search={{ category }}
+              search={{ category, workerId: undefined, q: undefined }}
               className="block text-sm text-muted-foreground hover:text-primary transition-colors no-underline"
             >
               {label}
@@ -63,6 +63,7 @@ export default function Footer() {
           ))}
           <Link
             to="/professionals"
+            search={{ workerId: undefined, category: undefined, q: undefined }}
             className="block text-sm font-semibold text-secondary hover:opacity-80 transition-opacity no-underline mt-1"
           >
             Ver todos →

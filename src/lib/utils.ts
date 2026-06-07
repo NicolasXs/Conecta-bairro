@@ -23,3 +23,13 @@ export function formatPrice(price?: number | null): string | null {
   if (price == null) return null
   return price.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
 }
+
+export function looksLikeUrl(value: string): boolean {
+  return /^https?:\/\//i.test(value) || /^www\./i.test(value);
+}
+
+export function resolveUrl(value: string): string | null {
+  if (/^https?:\/\//i.test(value)) return value;
+  if (/^www\./i.test(value)) return `https://${value}`;
+  return null;
+}

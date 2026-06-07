@@ -35,7 +35,7 @@ export function WorkerDrawer({
   });
 
   const servicesQuery = useQuery<Service[]>({
-    queryKey: ["worker-services-modal", workerId],
+    queryKey: ["services", { workerId }],
     queryFn: () => apiRequest<Service[]>(`/users/${encodeURIComponent(workerId)}/services`),
     enabled: open,
   });

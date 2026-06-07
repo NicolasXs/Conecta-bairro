@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
+import { formatCep, getCepDigits, fetchViaCep } from "../lib/cep";
 
 import { useRegisterMutation } from "../hooks/use-auth";
 import { isAuthenticated } from "../lib/auth";
@@ -70,20 +71,6 @@ const registerSchema = z
 
 type RegisterFormValues = z.infer<typeof registerSchema>;
 
-type ViaCepResponse = {
-  bairro?: string;
-  localidade?: string;
-  erro?: boolean;
-};
-
-function formatCep(value: string): string {
-  const digitsOnly = value.replace(/\D/g, "").slice(0, 8);
-  return digitsOnly.length <= 5 ? digitsOnly : `${digitsOnly.slice(0, 5)}-${digitsOnly.slice(5)}`;
-}
-
-function getCepDigits(value: string): string {
-  return value.replace(/\D/g, "").slice(0, 8);
-}
 
 const STEPS = ["Dados pessoais", "Localização", "Senha"];
 
@@ -115,13 +102,7 @@ function RegisterPage() {
     enabled: cepDigits.length === 8,
     retry: false,
     staleTime: 1000 * 60 * 10,
-    queryFn: async () => {
-      const response = await fetch(`https://viacep.com.br/ws/${cepDigits}/json/`);
-      if (!response.ok) throw new Error("Falha ao consultar o CEP.");
-      const data = (await response.json()) as ViaCepResponse;
-      if (data.erro) throw new Error("CEP não encontrado.");
-      return data;
-    },
+    queryFn: () => fetchViaCep(cepDigits),
   });
 
   useEffect(() => {
