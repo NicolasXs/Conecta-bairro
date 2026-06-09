@@ -22,10 +22,18 @@ function FeaturedServiceCard({ svc }: { svc: Service }) {
       search={{ workerId: svc.workerId, category: undefined, q: undefined }}
       className="bg-card rounded-xl border border-outline-variant overflow-hidden hover:shadow-xl hover:border-secondary/30 transition-all flex flex-col no-underline group"
     >
-      <div className="h-32 bg-primary/5 dark:bg-primary/10 flex items-center justify-center border-b border-outline-variant relative">
-        <span className="material-symbols-outlined text-secondary text-6xl">
-          {categoryIcon(svc.category)}
-        </span>
+      <div className="h-32 bg-primary/5 dark:bg-primary/10 flex items-center justify-center border-b border-outline-variant relative overflow-hidden">
+        {svc.imageUrl ? (
+          <img
+            src={svc.imageUrl}
+            alt={svc.title}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          />
+        ) : (
+          <span className="material-symbols-outlined text-secondary text-6xl">
+            {categoryIcon(svc.category)}
+          </span>
+        )}
         <span className="absolute top-3 right-3 bg-secondary text-secondary-foreground text-xs font-bold px-3 py-1 rounded-full">
           {svc.category}
         </span>

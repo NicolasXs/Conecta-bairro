@@ -387,10 +387,18 @@ function ProfessionalsPage() {
                   onClick={() => svc.workerId && openModal(svc.workerId)}
                   className="bg-card rounded-xl border border-outline-variant overflow-hidden hover:shadow-xl hover:border-secondary/30 transition-all flex flex-col text-left cursor-pointer w-full"
                 >
-                  <div className="h-28 bg-primary/5 dark:bg-primary/10 flex items-center justify-center border-b border-outline-variant relative">
-                    <span className="material-symbols-outlined text-secondary text-5xl">
-                      {categoryIcon(svc.category)}
-                    </span>
+                  <div className="h-28 bg-primary/5 dark:bg-primary/10 flex items-center justify-center border-b border-outline-variant relative overflow-hidden">
+                    {svc.imageUrl ? (
+                      <img
+                        src={svc.imageUrl}
+                        alt={svc.title}
+                        className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                      />
+                    ) : (
+                      <span className="material-symbols-outlined text-secondary text-5xl">
+                        {categoryIcon(svc.category)}
+                      </span>
+                    )}
                     <span className="absolute top-3 right-3 bg-secondary text-secondary-foreground text-xs font-bold px-3 py-1 rounded-full">
                       {svc.category}
                     </span>

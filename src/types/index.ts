@@ -61,6 +61,7 @@ export type Service = {
   category: string;
   bairro: string;
   price?: number | null;
+  imageUrl?: string | null;
   workerId?: string;
   workerName?: string;
   avgScore?: number | null;
