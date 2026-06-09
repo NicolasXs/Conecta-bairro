@@ -164,7 +164,7 @@ function RegisterPage() {
   return (
     <div className="min-h-screen flex">
       {/* ── Brand panel ─────────────────────────────────────────────────────── */}
-      <div className="hidden lg:flex lg:w-[45%] flex-col justify-between bg-primary dark:bg-[oklch(0.16_0.025_253)] px-12 py-10">
+      <div className="hidden lg:flex lg:w-[45%] flex-col justify-between bg-secondary dark:bg-[oklch(0.18_0.07_158)] px-12 py-10">
         <Link to="/" className="no-underline">
           <span className="text-2xl font-bold text-white tracking-tight">
             Conecta Bairro
@@ -182,7 +182,7 @@ function RegisterPage() {
           <div className="space-y-4">
             {STEPS.map((step, i) => (
               <div key={step} className="flex items-center gap-3">
-                <span className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center shrink-0 text-secondary-foreground text-sm font-bold">
+                <span className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center shrink-0 text-white text-sm font-bold">
                   {i + 1}
                 </span>
                 <span className="text-white/90 text-sm font-medium">{step}</span>
@@ -197,7 +197,7 @@ function RegisterPage() {
       </div>
 
       {/* ── Form panel ──────────────────────────────────────────────────────── */}
-      <div className="relative flex flex-1 items-start justify-center bg-background px-6 py-12 overflow-y-auto">
+      <div className="relative flex flex-1 items-center justify-center bg-background px-6 py-12 overflow-y-auto">
         <AnimatedGridPattern
           className="absolute inset-0 -z-10 opacity-30 mask-[radial-gradient(600px_circle_at_center,white,transparent)]"
           numSquares={30}

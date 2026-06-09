@@ -79,7 +79,7 @@ function LoginPage() {
   return (
     <div className="min-h-screen flex">
       {/* ── Brand panel ─────────────────────────────────────────────────────── */}
-      <div className="hidden lg:flex lg:w-[45%] flex-col justify-between bg-primary dark:bg-[oklch(0.16_0.025_253)] px-12 py-10">
+      <div className="hidden lg:flex lg:w-[45%] flex-col justify-between bg-secondary dark:bg-[oklch(0.18_0.07_158)] px-12 py-10">
         <Link to="/" className="no-underline">
           <span className="text-2xl font-bold text-white tracking-tight">
             Conecta Bairro
@@ -97,7 +97,7 @@ function LoginPage() {
             {FEATURES.map(({ icon, label }) => (
               <li key={icon} className="flex items-center gap-3">
                 <span className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center shrink-0">
-                  <span className="material-symbols-outlined text-secondary text-[20px]">
+                  <span className="material-symbols-outlined text-white text-[20px]">
                     {icon}
                   </span>
                 </span>
