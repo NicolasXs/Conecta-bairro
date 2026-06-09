@@ -12,9 +12,9 @@ function getInitials(name?: string | null): string {
 }
 
 const activeLinkClass =
-  "text-base font-bold text-primary border-b-2 border-primary transition-colors no-underline";
+  "text-base font-bold text-secondary border-b-2 border-secondary transition-colors no-underline";
 const inactiveLinkClass =
-  "text-base text-muted-foreground hover:text-primary transition-colors no-underline";
+  "text-base text-muted-foreground hover:text-secondary transition-colors no-underline";
 
 export default function Header() {
   const authenticated = isAuthenticated();
@@ -53,7 +53,7 @@ export default function Header() {
     >
       <div className="flex justify-between items-center h-full px-6 max-w-300 mx-auto">
         {/* Logo */}
-        <Link to="/" className="text-2xl font-bold text-primary no-underline shrink-0">
+        <Link to="/" className="text-2xl font-bold text-secondary no-underline shrink-0">
           Conecta Bairro
         </Link>
 
@@ -124,7 +124,7 @@ export default function Header() {
               </Link>
               <button
                 onClick={logout}
-                className="text-sm font-semibold px-4 py-2 text-muted-foreground hover:text-primary transition-colors"
+                className="text-sm font-semibold px-4 py-2 text-muted-foreground hover:text-secondary transition-colors"
               >
                 Sair
               </button>
@@ -133,13 +133,13 @@ export default function Header() {
             <>
               <Link
                 to="/login"
-                className="text-sm font-semibold px-4 py-2 text-primary hover:opacity-80 transition-opacity no-underline"
+                className="text-sm font-semibold px-4 py-2 text-secondary hover:opacity-80 transition-opacity no-underline"
               >
                 Entrar
               </Link>
               <Link
                 to="/register"
-                className="text-sm font-semibold px-5 py-2 bg-primary text-primary-foreground rounded-lg hover:shadow-lg transition-all no-underline"
+                className="text-sm font-semibold px-5 py-2 bg-secondary text-secondary-foreground rounded-lg hover:shadow-lg transition-all no-underline"
               >
                 Cadastrar
               </Link>
@@ -261,7 +261,7 @@ export default function Header() {
                 </Link>
                 <Link
                   to="/register"
-                  className="w-full py-3 text-center text-sm font-semibold bg-primary text-primary-foreground rounded-xl hover:opacity-90 transition-opacity no-underline"
+                  className="w-full py-3 text-center text-sm font-semibold bg-secondary text-secondary-foreground rounded-xl hover:opacity-90 transition-opacity no-underline"
                 >
                   Criar conta
                 </Link>

@@ -10,6 +10,7 @@ type CreateServicePayload = {
   category: string;
   bairro: string;
   price?: number | null;
+  imageUrl?: string;
 };
 
 type UpdateServicePayload = {
@@ -18,6 +19,7 @@ type UpdateServicePayload = {
   category?: string;
   bairro?: string;
   price?: number | null;
+  imageUrl?: string | null;
 };
 
 type Props = {
@@ -43,6 +45,7 @@ export function ServicesSection({
   const [svcCategory, setSvcCategory] = useState("");
   const [svcBairro, setSvcBairro] = useState(defaultBairro);
   const [svcPrice, setSvcPrice] = useState("");
+  const [svcImageUrl, setSvcImageUrl] = useState("");
   const [svcMessage, setSvcMessage] = useState<string | null>(null);
   const [svcError, setSvcError] = useState<string | null>(null);
 
@@ -52,6 +55,7 @@ export function ServicesSection({
   const [editCategory, setEditCategory] = useState("");
   const [editBairro, setEditBairro] = useState("");
   const [editPrice, setEditPrice] = useState("");
+  const [editImageUrl, setEditImageUrl] = useState("");
   const [editError, setEditError] = useState<string | null>(null);
 
   const createService = useMutation({
@@ -64,6 +68,8 @@ export function ServicesSection({
       setSvcDescription("");
       setSvcCategory("");
       setSvcBairro(defaultBairro);
+      setSvcPrice("");
+      setSvcImageUrl("");
       setServiceFormOpen(false);
       queryClient.invalidateQueries({ queryKey: ["services", { workerId: userId }] });
     },
@@ -117,6 +123,7 @@ export function ServicesSection({
     setEditCategory(svc.category);
     setEditBairro(svc.bairro);
     setEditPrice(svc.price != null ? String(svc.price) : "");
+    setEditImageUrl(svc.imageUrl ?? "");
     setEditError(null);
   }
 
@@ -131,6 +138,7 @@ export function ServicesSection({
       category: svcCategory,
       bairro: svcBairro.trim(),
       price: parsedPrice && !isNaN(parsedPrice) ? parsedPrice : null,
+      imageUrl: svcImageUrl.trim() || undefined,
     });
   }
 
@@ -146,6 +154,7 @@ export function ServicesSection({
         category: editCategory,
         bairro: editBairro.trim(),
         price: parsedPrice && !isNaN(parsedPrice) ? parsedPrice : null,
+        imageUrl: editImageUrl.trim() || null,
       },
     });
   }
@@ -241,6 +250,18 @@ export function ServicesSection({
                 value={svcPrice}
                 onChange={(e) => setSvcPrice(e.target.value)}
                 placeholder="Ex: 150.00 (opcional)"
+                className="w-full px-4 py-3 bg-card border border-outline-variant rounded-xl outline-none focus:border-secondary focus:ring-1 focus:ring-secondary transition-all text-sm text-foreground"
+              />
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-xs font-bold uppercase tracking-wider mb-2 text-muted-foreground">
+                URL da imagem
+              </label>
+              <input
+                type="url"
+                value={svcImageUrl}
+                onChange={(e) => setSvcImageUrl(e.target.value)}
+                placeholder="https://... (opcional)"
                 className="w-full px-4 py-3 bg-card border border-outline-variant rounded-xl outline-none focus:border-secondary focus:ring-1 focus:ring-secondary transition-all text-sm text-foreground"
               />
             </div>
@@ -351,6 +372,15 @@ export function ServicesSection({
                       className="w-full px-4 py-2.5 bg-card border border-outline-variant rounded-xl outline-none focus:border-secondary focus:ring-1 focus:ring-secondary transition-all text-sm text-foreground"
                     />
                   </div>
+                  <div className="md:col-span-2">
+                    <input
+                      type="url"
+                      value={editImageUrl}
+                      onChange={(e) => setEditImageUrl(e.target.value)}
+                      placeholder="URL da imagem (opcional — deixe vazio para remover)"
+                      className="w-full px-4 py-2.5 bg-card border border-outline-variant rounded-xl outline-none focus:border-secondary focus:ring-1 focus:ring-secondary transition-all text-sm text-foreground"
+                    />
+                  </div>
                 </div>
                 {editError && (
                   <div className="flex items-center gap-2 text-destructive bg-destructive/10 px-4 py-3 rounded-xl border border-destructive/20 text-sm font-semibold">
@@ -378,6 +408,13 @@ export function ServicesSection({
             ) : (
               <div key={svc.id} className="px-6 py-5">
                 <div className="flex items-start justify-between gap-4">
+                  {svc.imageUrl && (
+                    <img
+                      src={svc.imageUrl}
+                      alt={svc.title}
+                      className="w-16 h-16 rounded-xl object-cover shrink-0 border border-outline-variant"
+                    />
+                  )}
                   <div className="flex-1 min-w-0">
                     <p className="font-bold text-foreground">{svc.title}</p>
                     <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
